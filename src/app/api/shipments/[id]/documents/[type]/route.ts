@@ -2,6 +2,7 @@ import { generateCommercialInvoice } from "@/lib/documents/invoice";
 import { generatePackingList } from "@/lib/documents/packing-list";
 import { generateProformaInvoice } from "@/lib/documents/proforma";
 import type { DocType, ShipmentDocumentPayload } from "@/lib/documents/types";
+import { getEntitlement, getOrgPlan, incrementUsage } from "@/lib/billing";
 import {
   getShipmentWithItems,
   recordDocumentGenerated,
@@ -43,6 +44,15 @@ export async function GET(
     return new Response("Unsupported document type.", { status: 400 });
   }
 
+  const plan = await getOrgPlan(shipment.org_id);
+  const entitlement = await getEntitlement(shipment.org_id, plan);
+  if (!entitlement.canCreateDocument) {
+    return Response.json(
+      { error: "Document limit reached for your plan." },
+      { status: 402 },
+    );
+  }
+
   const payload = toDocumentPayload(shipment);
   const bytes = await generator.generate(payload);
 
@@ -50,6 +60,8 @@ export async function GET(
     type,
     generatedAt: new Date().toISOString(),
   });
+
+  await incrementUsage(shipment.org_id, "document");
 
   const reference = shipment.reference ?? shipment.id.slice(0, 8);
 

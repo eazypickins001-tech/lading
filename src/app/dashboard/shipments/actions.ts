@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
+import { getEntitlement, incrementUsage } from "@/lib/billing";
 import { runConsistencyChecks } from "@/lib/consistency";
 import { replaceFindings, setFindingResolved } from "@/lib/consistency-store";
 import type { TradeChannel, TransportMode } from "@/lib/documents/types";
@@ -45,6 +46,11 @@ export async function createShipmentAction(
   const organization = await getActiveOrg();
   if (!organization) {
     redirect("/onboarding");
+  }
+
+  const entitlement = await getEntitlement(organization.id, organization.plan);
+  if (!entitlement.canCreateShipment) {
+    redirect("/dashboard/billing?limit=shipments");
   }
 
   const reference = String(formData.get("reference") ?? "").trim() || null;
@@ -136,6 +142,8 @@ export async function createShipmentAction(
     currency,
     items,
   });
+
+  await incrementUsage(organization.id, "shipment");
 
   redirect(`/dashboard/shipments/${shipmentId}`);
 }

@@ -9,7 +9,8 @@ export type NavKey =
   | "requirements"
   | "landedCost"
   | "tradeTerms"
-  | "profile";
+  | "profile"
+  | "billing";
 
 const links: { key: NavKey; href: string; label: string }[] = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard" },
@@ -18,6 +19,7 @@ const links: { key: NavKey; href: string; label: string }[] = [
   { key: "landedCost", href: "/dashboard/landed-cost", label: "Landed cost" },
   { key: "tradeTerms", href: "/dashboard/trade-terms", label: "Trade terms" },
   { key: "profile", href: "/dashboard/profile", label: "Profile" },
+  { key: "billing", href: "/dashboard/billing", label: "Billing" },
 ];
 
 export function DashboardNav({ active }: { active: NavKey }) {
