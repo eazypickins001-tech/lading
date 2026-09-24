@@ -2,6 +2,7 @@ import {
   resolveFindingAction,
   runChecksAction,
 } from "@/app/dashboard/shipments/actions";
+import { InfoTip } from "@/components/info-tip";
 import type { FindingSeverity } from "@/lib/consistency";
 import type { StoredFinding } from "@/lib/consistency-store";
 
@@ -93,9 +94,15 @@ export function ConsistencyFindings({
     <section className="mt-8 rounded-xl border border-hairline bg-white p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
-            Consistency checks
-          </h2>
+          <div className="flex items-center gap-1.5">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+              Consistency checks
+            </h2>
+            <InfoTip label="About consistency checks">
+              Checks compare shipment data and line items, flagging issues
+              before submission.
+            </InfoTip>
+          </div>
           <p className="mt-2 text-sm text-muted">
             Deterministic cross-checks across the shipment fields and line
             items.

@@ -1,42 +1,17 @@
 import Link from "next/link";
 import { signOut } from "@/app/(auth)/actions";
+import { DashboardNav, type NavKey } from "@/components/dashboard-nav";
 import { LadingLogo } from "@/components/lading-logo";
 
-export function DashboardHeader({
-  active,
-}: {
-  active: "dashboard" | "shipments" | "requirements";
-}) {
-  const linkClass = (isActive: boolean) =>
-    isActive ? "text-white" : "text-white/70 hover:text-white";
-
+export function DashboardHeader({ active }: { active: NavKey }) {
   return (
     <header className="border-b border-hairline bg-deep-harbor text-white">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+      <div className="relative mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-4">
         <div className="flex items-center gap-8">
           <Link href="/dashboard" aria-label="Lading dashboard">
             <LadingLogo variant="onDark" />
           </Link>
-          <nav className="hidden items-center gap-6 text-sm md:flex">
-            <Link
-              href="/dashboard"
-              className={linkClass(active === "dashboard")}
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/dashboard/shipments"
-              className={linkClass(active === "shipments")}
-            >
-              Shipments
-            </Link>
-            <Link
-              href="/dashboard/requirements"
-              className={linkClass(active === "requirements")}
-            >
-              Requirements
-            </Link>
-          </nav>
+          <DashboardNav active={active} />
         </div>
         <form action={signOut}>
           <button

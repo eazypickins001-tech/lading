@@ -1,15 +1,32 @@
 import { redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { InfoTip } from "@/components/info-tip";
 import { RequiredDocumentsList } from "@/components/required-documents";
 import { getCurrentUser } from "@/lib/auth";
 import type { TradeChannel } from "@/lib/documents/types";
 import { getRequiredDocuments, type RequiredDocument } from "@/lib/requirements";
 
 const attributeOptions = [
-  { name: "plant_products", label: "Plant products" },
-  { name: "food_drugs_cosmetics", label: "Food, drugs and cosmetics" },
-  { name: "regulated_products", label: "Regulated products" },
-  { name: "preferential_treatment", label: "Preferential tariff treatment" },
+  {
+    name: "plant_products",
+    label: "Plant products",
+    tip: "Select for plants or plant products, which can trigger phytosanitary certificates.",
+  },
+  {
+    name: "food_drugs_cosmetics",
+    label: "Food, drugs and cosmetics",
+    tip: "Select for food, drugs, or cosmetics that may need NAFDAC or health permits.",
+  },
+  {
+    name: "regulated_products",
+    label: "Regulated products",
+    tip: "Select when the goods fall under regulated categories with extra permits.",
+  },
+  {
+    name: "preferential_treatment",
+    label: "Preferential tariff treatment",
+    tip: "Select when claiming reduced tariffs under a trade agreement, which needs a certificate of origin.",
+  },
 ];
 
 const inputClass =
@@ -121,9 +138,15 @@ export default async function RequirementsPage({
               />
             </div>
             <div>
-              <label htmlFor="channel" className={labelClass}>
-                Channel
-              </label>
+              <div className="flex items-center gap-1.5">
+                <label htmlFor="channel" className={labelClass}>
+                  Channel
+                </label>
+                <InfoTip label="About the channel">
+                  Import brings goods into the destination country; export
+                  sends them out. This changes which documents apply.
+                </InfoTip>
+              </div>
               <select
                 id="channel"
                 name="channel"
@@ -142,19 +165,22 @@ export default async function RequirementsPage({
             </legend>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {attributeOptions.map((option) => (
-                <label
+                <div
                   key={option.name}
                   className="flex items-center gap-2 text-sm text-ink"
                 >
-                  <input
-                    type="checkbox"
-                    name={option.name}
-                    value="true"
-                    defaultChecked={attributes[option.name] === true}
-                    className="h-4 w-4 rounded border-hairline accent-signal-teal"
-                  />
-                  {option.label}
-                </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      name={option.name}
+                      value="true"
+                      defaultChecked={attributes[option.name] === true}
+                      className="h-4 w-4 rounded border-hairline accent-signal-teal"
+                    />
+                    {option.label}
+                  </label>
+                  <InfoTip label={`About ${option.label}`}>{option.tip}</InfoTip>
+                </div>
               ))}
             </div>
           </fieldset>

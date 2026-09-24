@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { InfoTip } from "@/components/info-tip";
 import type { Incoterm } from "@/lib/shipments";
 import { createShipmentAction } from "../actions";
 
@@ -84,9 +85,15 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
           </div>
 
           <div>
-            <label htmlFor="channel" className={labelClass}>
-              Channel
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="channel" className={labelClass}>
+                Channel
+              </label>
+              <InfoTip label="About the channel">
+                Import brings goods into the destination country; export sends
+                them out. This changes which documents apply.
+              </InfoTip>
+            </div>
             <select id="channel" name="channel" defaultValue="import" className={inputClass}>
               <option value="import">Import</option>
               <option value="export">Export</option>
@@ -132,9 +139,15 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
           </div>
 
           <div>
-            <label htmlFor="mode" className={labelClass}>
-              Transport mode
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="mode" className={labelClass}>
+                Transport mode
+              </label>
+              <InfoTip label="About the transport mode">
+                How the goods travel. Sea uses a bill of lading, air uses an
+                airway bill.
+              </InfoTip>
+            </div>
             <select id="mode" name="mode" defaultValue="sea" className={inputClass}>
               <option value="sea">Sea</option>
               <option value="air">Air</option>
@@ -159,9 +172,15 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
           </div>
 
           <div>
-            <label htmlFor="incoterm" className={labelClass}>
-              Incoterm
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="incoterm" className={labelClass}>
+                Incoterm
+              </label>
+              <InfoTip label="About Incoterms">
+                The trade term that sets who pays costs and carries risk, for
+                example FOB or CIF.
+              </InfoTip>
+            </div>
             <select id="incoterm" name="incoterm" defaultValue="" className={inputClass}>
               <option value="">Not set</option>
               {incoterms.map((incoterm) => (
@@ -173,9 +192,15 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
           </div>
 
           <div>
-            <label htmlFor="incotermPlace" className={labelClass}>
-              Incoterm place
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="incotermPlace" className={labelClass}>
+                Incoterm place
+              </label>
+              <InfoTip label="About the Incoterm place">
+                The named place or port the Incoterm applies to, for example
+                Lagos or Apapa.
+              </InfoTip>
+            </div>
             <input
               id="incotermPlace"
               name="incotermPlace"
@@ -233,7 +258,13 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>HS code</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className={labelClass}>HS code</label>
+                    <InfoTip label="About the HS code">
+                      The customs classification code for the product, used to
+                      look up duties and document rules.
+                    </InfoTip>
+                  </div>
                   <input
                     name="itemHsCode"
                     type="text"
@@ -287,7 +318,12 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Net weight (kg)</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className={labelClass}>Net weight (kg)</label>
+                    <InfoTip label="About net weight">
+                      The weight of the goods alone, without packaging.
+                    </InfoTip>
+                  </div>
                   <input
                     name="itemNetWeight"
                     type="number"
@@ -301,7 +337,13 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Gross weight (kg)</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className={labelClass}>Gross weight (kg)</label>
+                    <InfoTip label="About gross weight">
+                      The weight of the goods plus packaging, used on the
+                      packing list.
+                    </InfoTip>
+                  </div>
                   <input
                     name="itemGrossWeight"
                     type="number"

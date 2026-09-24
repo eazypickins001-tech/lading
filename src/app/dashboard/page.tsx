@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { NextSteps } from "@/components/next-steps";
+import { ProductTour } from "@/components/product-tour";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
+import { getOnboardingState } from "@/lib/onboarding";
 import { getDashboardCounts } from "@/lib/shipments";
 
 export default async function DashboardPage() {
@@ -15,7 +18,10 @@ export default async function DashboardPage() {
     redirect("/onboarding");
   }
 
-  const counts = await getDashboardCounts(organization.id);
+  const [counts, onboarding] = await Promise.all([
+    getDashboardCounts(organization.id),
+    getOnboardingState(organization.id),
+  ]);
 
   const stats = [
     {
@@ -85,7 +91,11 @@ export default async function DashboardPage() {
             Requirements checker
           </Link>
         </div>
+
+        <NextSteps state={onboarding} />
       </main>
+
+      <ProductTour />
     </div>
   );
 }
