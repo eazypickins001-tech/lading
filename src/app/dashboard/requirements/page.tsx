@@ -5,6 +5,7 @@ import { RequiredDocumentsList } from "@/components/required-documents";
 import { getCurrentUser } from "@/lib/auth";
 import type { TradeChannel } from "@/lib/documents/types";
 import { getRequiredDocuments, type RequiredDocument } from "@/lib/requirements";
+import { HsAssistant } from "./hs-assistant";
 
 const attributeOptions = [
   {
@@ -91,6 +92,8 @@ export default async function RequirementsPage({
         <p className="mt-2 max-w-2xl text-muted">
           Check which documents a trade corridor requires before you ship.
         </p>
+
+        <HsAssistant />
 
         <form
           method="get"
