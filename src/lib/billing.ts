@@ -56,7 +56,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   starter: {
     id: "starter",
     name: "Starter",
-    priceNgn: 100,
+    priceNgn: 10000,
     documentsPerMonth: 50,
     shipmentsPerMonth: 25,
     users: 2,
@@ -70,7 +70,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   professional: {
     id: "professional",
     name: "Professional",
-    priceNgn: 100,
+    priceNgn: 35000,
     documentsPerMonth: 200,
     shipmentsPerMonth: 100,
     users: 5,
@@ -85,7 +85,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   organization: {
     id: "organization",
     name: "Organization",
-    priceNgn: 100,
+    priceNgn: 90000,
     documentsPerMonth: 1000,
     shipmentsPerMonth: 500,
     users: 20,
@@ -99,7 +99,7 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
   agent: {
     id: "agent",
     name: "Agent",
-    priceNgn: 100,
+    priceNgn: 50000,
     documentsPerMonth: 300,
     shipmentsPerMonth: 150,
     users: 10,

@@ -202,3 +202,24 @@ Most important test - tenant isolation (C1 fix)
 One caveat
 Do not use "Sign up" with a brand-new email - email confirmation is on and there's no SMTP, so the confirmation email won't arrive and you can't log in. The full test plan is in docs/test-plan.md.
 Want me to temporarily disable email confirmation so you can also test the real signup flow, or leave it and set up SMTP?
+
+Sample data I added
+Account	Data
+Trader A	Import shipment IMP-2026-0001 (CN→NG, CIF Apapa) with 2 items + exporter & consignee parties linked. Export shipment EXP-2026-0001 (NG→GB, FOB Apapa, USD) with cocoa (180100) + sesame (120740). 2 parties.
+Trader B	Import shipment IMP-2026-0001 (US→NG, air, FCA JFK) with 1 item.
+Agent	(empty - used for the access-grant tests)
+Direct links (log in as Trader A first):
+- Import: https://lading-eazypickins.vercel.app/dashboard/shipments/154e31ad-6fa7-4e72-9948-9a8d4e99680c
+- Export: https://lading-eazypickins.vercel.app/dashboard/shipments/f0b650f5-6f71-4667-ab25-3747a3bb439a
+Pricing now ₦100 (temporary)
+All four paid plans (starter, professional, organization, agent) are ₦100; free stays ₦0. The pricing page and billing page will show ₦100, and I cleared the cached Paystack plans so checkout creates plans at ₦100.
+Paystack test card: 4084 0840 8408 4081, CVV 408, any future expiry, any PIN/OTP. (Use a test-mode key to avoid real charges; if your Vercel PAYSTACK_SECRET_KEY is the live key, a ₦100 charge would be real - tell me if you'd rather I set the test key for Preview.)
+Suggested first tests
+1. Trader A → import shipment → check Documents required (Form M + PAAR), run Consistency checks, download Commercial Invoice / Packing List / Proforma, then Edit shipment (the page that used to 404).
+2. Billing → choose a plan → pay ₦100 with the test card → confirm the plan activates and shows "Renews on...". Then Cancel subscription.
+3. Tenant isolation (the critical fix): log in as Trader B and open Trader A's shipment link above → should be 404.
+4. Admin (geraldnoria@gmail.com) → the Admin card → /admin and /dashboard/data.
+Reverting later
+When you're finished testing, say the word and I'll restore the real prices (10,000 / 35,000 / 90,000 / 50,000) and clear the cached Paystack plans again so real subscriptions are created at the correct amounts.
+Reminder: email confirmation is on but SMTP isn't configured, so use the provided accounts (all pre-confirmed) rather than "Sign up".
+▣  Build · DeepSeek V4 Flash Visi
