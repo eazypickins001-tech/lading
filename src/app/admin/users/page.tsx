@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { listAdminUsers } from "@/lib/admin-data";
 
 export const metadata: Metadata = {
@@ -45,6 +46,7 @@ export default async function AdminUsersPage() {
                 <th className="px-5 py-3 font-medium">Organizations</th>
                 <th className="px-5 py-3 font-medium">Created</th>
                 <th className="px-5 py-3 font-medium">Last sign-in</th>
+                <th className="px-5 py-3 font-medium" />
               </tr>
             </thead>
             <tbody>
@@ -73,6 +75,14 @@ export default async function AdminUsersPage() {
                   </td>
                   <td className="px-5 py-4 font-mono text-xs text-muted">
                     {formatDateOrDash(user.lastSignInAt)}
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <Link
+                      href={`/admin/users/${user.id}`}
+                      className="font-medium text-signal-teal hover:underline"
+                    >
+                      Edit
+                    </Link>
                   </td>
                 </tr>
               ))}

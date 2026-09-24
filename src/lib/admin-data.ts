@@ -58,6 +58,29 @@ export type AdminSubscription = {
   createdAt: string;
 };
 
+export type AdminUserProfile = {
+  fullName: string | null;
+  phone: string | null;
+  country: string | null;
+};
+
+export type AdminUserDetailOrganization = {
+  id: string;
+  name: string;
+  type: string;
+  plan: string;
+  role: string;
+};
+
+export type AdminUserDetail = {
+  id: string;
+  email: string;
+  createdAt: string;
+  lastSignInAt: string | null;
+  profile: AdminUserProfile | null;
+  organizations: AdminUserDetailOrganization[];
+};
+
 export async function getAdminOverview(): Promise<AdminOverview> {
   const admin = createAdminClient();
 
@@ -291,4 +314,78 @@ export async function listAdminSubscriptions(): Promise<AdminSubscription[]> {
     periodEnd: subscription.period_end,
     createdAt: subscription.created_at,
   }));
+}
+
+export async function getAdminUser(
+  id: string,
+): Promise<AdminUserDetail | null> {
+  const admin = createAdminClient();
+
+  const { data: userData, error: userError } =
+    await admin.auth.admin.getUserById(id);
+
+  if (userError || !userData) {
+    return null;
+  }
+
+  const user = userData.user;
+
+  const [profileResult, membershipResult] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("full_name, phone, country")
+      .eq("id", id)
+      .maybeSingle(),
+    admin
+      .from("memberships")
+      .select("role, organizations (id, name, type, plan)")
+      .eq("user_id", id),
+  ]);
+
+  const profileRow = (profileResult.data ?? null) as {
+    full_name: string | null;
+    phone: string | null;
+    country: string | null;
+  } | null;
+
+  const memberships = (membershipResult.data ?? []) as {
+    role: string;
+    organizations:
+      | { id: string; name: string; type: string; plan: string }
+      | { id: string; name: string; type: string; plan: string }[]
+      | null;
+  }[];
+
+  const organizations = memberships.flatMap((membership) => {
+    const organization = Array.isArray(membership.organizations)
+      ? membership.organizations[0]
+      : membership.organizations;
+
+    return organization
+      ? [
+          {
+            id: organization.id,
+            name: organization.name,
+            type: organization.type,
+            plan: organization.plan,
+            role: membership.role,
+          },
+        ]
+      : [];
+  });
+
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    createdAt: user.created_at,
+    lastSignInAt: user.last_sign_in_at ?? null,
+    profile: profileRow
+      ? {
+          fullName: profileRow.full_name,
+          phone: profileRow.phone,
+          country: profileRow.country,
+        }
+      : null,
+    organizations,
+  };
 }
