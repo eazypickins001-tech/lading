@@ -7,6 +7,7 @@ type PaystackWebhookPayload = {
   event?: string;
   data?: {
     reference?: string;
+    subscription_code?: string;
     metadata?: Record<string, unknown> | null;
   };
 };
@@ -35,6 +36,21 @@ export async function POST(request: Request) {
     if (reference && orgId && plan && isPaidPlan(plan)) {
       try {
         await activateSubscription(orgId, plan, reference);
+      } catch {
+        return new Response("Activation failed.", { status: 500 });
+      }
+    }
+  }
+
+  if (payload.event === "subscription.create") {
+    const metadata = payload.data?.metadata ?? {};
+    const plan = typeof metadata.plan === "string" ? metadata.plan : null;
+    const orgId = typeof metadata.orgId === "string" ? metadata.orgId : null;
+    const subscriptionCode = payload.data?.subscription_code;
+
+    if (orgId && plan && subscriptionCode && isPaidPlan(plan)) {
+      try {
+        await activateSubscription(orgId, plan, subscriptionCode);
       } catch {
         return new Response("Activation failed.", { status: 500 });
       }

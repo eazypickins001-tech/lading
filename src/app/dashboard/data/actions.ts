@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isAdminEmail } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
+import { ensureAllPaystackPlans } from "@/lib/payment-plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDueSources, runSourceSync } from "@/lib/sync/engine";
 
@@ -30,6 +31,12 @@ export async function runSourceSyncAction(formData: FormData): Promise<void> {
 export async function runAllSyncAction(): Promise<void> {
   await requireAdmin();
   await runDueSources();
+  revalidatePath("/dashboard/data");
+}
+
+export async function syncPaystackPlansAction(): Promise<void> {
+  await requireAdmin();
+  await ensureAllPaystackPlans();
   revalidatePath("/dashboard/data");
 }
 

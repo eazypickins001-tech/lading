@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
 import { isPaidPlan, planFor } from "@/lib/billing";
+import { ensurePaystackPlan } from "@/lib/payment-plans";
 import { initializeTransaction } from "@/lib/paystack";
 
 export async function startCheckoutAction(formData: FormData): Promise<void> {
@@ -25,10 +26,16 @@ export async function startCheckoutAction(formData: FormData): Promise<void> {
   const plan = planFor(planId);
   const callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/paystack/callback?plan=${plan.id}`;
 
+  const planCode = await ensurePaystackPlan(plan.id).catch(() => null);
+  if (!planCode) {
+    redirect("/dashboard/billing?status=failed");
+  }
+
   const transaction = await initializeTransaction({
     email: user.email ?? "",
     amountNgn: plan.priceNgn,
     plan: plan.id,
+    planCode,
     callbackUrl,
     metadata: { orgId: organization.id, plan: plan.id },
   }).catch(() => null);

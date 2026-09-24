@@ -7,7 +7,13 @@ import {
   planFor,
   type PlanDefinition,
 } from "@/lib/billing";
+import { createClient } from "@/lib/supabase/server";
 import { startCheckoutAction } from "./actions";
+
+type SubscriptionRow = {
+  status: string;
+  period_end: string | null;
+};
 
 function formatNgn(amount: number): string {
   return new Intl.NumberFormat("en-NG", {
@@ -15,6 +21,14 @@ function formatNgn(amount: number): string {
     currency: "NGN",
     maximumFractionDigits: 0,
   }).format(amount);
+}
+
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat("en-NG", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(new Date(value));
 }
 
 function UsageBar({
@@ -138,6 +152,22 @@ export default async function BillingPage({
   const entitlement = await getEntitlement(organization.id, organization.plan);
   const currentPlan = planFor(organization.plan);
 
+  const supabase = await createClient();
+  const { data: subscriptionData } = await supabase
+    .from("subscriptions")
+    .select("status, period_end")
+    .eq("org_id", organization.id)
+    .eq("status", "active")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const subscription = subscriptionData as SubscriptionRow | null;
+  const renewalLabel =
+    subscription?.period_end
+      ? `Renews on ${formatDate(subscription.period_end)}`
+      : "No active subscription";
+
   const banner =
     status === "success"
       ? {
@@ -209,6 +239,11 @@ export default async function BillingPage({
                 : `${formatNgn(currentPlan.priceNgn)} per month`}{" "}
               · {entitlement.limits.users}{" "}
               {entitlement.limits.users === 1 ? "user" : "users"}
+            </p>
+            <p className="mt-3 text-sm text-ink">{renewalLabel}</p>
+            <p className="mt-2 text-xs text-muted">
+              Paid plans renew monthly via Paystack. To cancel, contact
+              support.
             </p>
           </section>
 

@@ -8,6 +8,13 @@ export type InitializeTransactionInput = {
   plan: string;
   callbackUrl: string;
   metadata: Record<string, unknown>;
+  planCode?: string;
+};
+
+export type CreatePlanInput = {
+  name: string;
+  amountNgn: number;
+  interval: string;
 };
 
 export type InitializedTransaction = {
@@ -42,6 +49,19 @@ type VerifyResponse = {
   };
 };
 
+type CreatePlanResponse = {
+  status: boolean;
+  message: string;
+  data?: {
+    plan_code: string;
+  };
+};
+
+type DeletePlanResponse = {
+  status: boolean;
+  message: string;
+};
+
 function secretKey(): string {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   if (!secret) {
@@ -64,6 +84,7 @@ export async function initializeTransaction(
       amount: Math.round(input.amountNgn * 100),
       callback_url: input.callbackUrl,
       metadata: { ...input.metadata, plan: input.plan },
+      ...(input.planCode ? { plan: input.planCode } : {}),
     }),
     cache: "no-store",
   });
@@ -105,6 +126,49 @@ export async function verifyTransaction(
     amountNgn: payload.data.amount / 100,
     metadata: payload.data.metadata ?? null,
   };
+}
+
+export async function createPlan(
+  input: CreatePlanInput,
+): Promise<{ planCode: string }> {
+  const response = await fetch(`${PAYSTACK_BASE_URL}/plan`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secretKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: input.name,
+      amount: Math.round(input.amountNgn * 100),
+      interval: input.interval,
+    }),
+    cache: "no-store",
+  });
+
+  const payload = (await response.json()) as CreatePlanResponse;
+
+  if (!response.ok || !payload.status || !payload.data) {
+    throw new Error(payload.message || "Could not create the Paystack plan.");
+  }
+
+  return { planCode: payload.data.plan_code };
+}
+
+export async function deletePlan(
+  planCode: string,
+): Promise<{ success: boolean }> {
+  const response = await fetch(
+    `${PAYSTACK_BASE_URL}/plan/${encodeURIComponent(planCode)}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${secretKey()}` },
+      cache: "no-store",
+    },
+  );
+
+  const payload = (await response.json()) as DeletePlanResponse;
+
+  return { success: response.ok && payload.status };
 }
 
 export function verifyWebhookSignature(
