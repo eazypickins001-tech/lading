@@ -29,6 +29,11 @@ export type VerifiedTransaction = {
   metadata: Record<string, unknown> | null;
 };
 
+export type DisableSubscriptionInput = {
+  code: string;
+  token: string;
+};
+
 type InitializeResponse = {
   status: boolean;
   message: string;
@@ -58,6 +63,11 @@ type CreatePlanResponse = {
 };
 
 type DeletePlanResponse = {
+  status: boolean;
+  message: string;
+};
+
+type DisableSubscriptionResponse = {
   status: boolean;
   message: string;
 };
@@ -169,6 +179,27 @@ export async function deletePlan(
   const payload = (await response.json()) as DeletePlanResponse;
 
   return { success: response.ok && payload.status };
+}
+
+export async function disableSubscription(
+  input: DisableSubscriptionInput,
+): Promise<boolean> {
+  const response = await fetch(`${PAYSTACK_BASE_URL}/subscription/disable`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secretKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code: input.code, token: input.token }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  const payload = (await response.json()) as DisableSubscriptionResponse;
+  return payload.status;
 }
 
 export function verifyWebhookSignature(

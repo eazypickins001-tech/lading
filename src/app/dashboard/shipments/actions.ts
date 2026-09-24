@@ -9,6 +9,7 @@ import { replaceFindings, setFindingResolved } from "@/lib/consistency-store";
 import type { TradeChannel, TransportMode } from "@/lib/documents/types";
 import { suggestHsCodes, type HsSuggestion } from "@/lib/hs-suggest";
 import { createShipment, getShipmentWithItems, type CreateShipmentItemInput } from "@/lib/shipments";
+import { getEffectivePlan } from "@/lib/subscriptions";
 
 const CHANNELS: TradeChannel[] = ["import", "export"];
 const MODES: TransportMode[] = [
@@ -89,7 +90,8 @@ export async function createShipmentAction(
     redirect("/onboarding");
   }
 
-  const entitlement = await getEntitlement(organization.id, organization.plan);
+  const plan = await getEffectivePlan(organization.id, organization.plan);
+  const entitlement = await getEntitlement(organization.id, plan);
   if (!entitlement.canCreateShipment) {
     redirect("/dashboard/billing?limit=shipments");
   }

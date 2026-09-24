@@ -8,6 +8,7 @@ import {
   recordDocumentGenerated,
   toDocumentPayload,
 } from "@/lib/shipments";
+import { getEffectivePlan } from "@/lib/subscriptions";
 
 export const runtime = "nodejs";
 
@@ -44,7 +45,10 @@ export async function GET(
     return new Response("Unsupported document type.", { status: 400 });
   }
 
-  const plan = await getOrgPlan(shipment.org_id);
+  const plan = await getEffectivePlan(
+    shipment.org_id,
+    await getOrgPlan(shipment.org_id),
+  );
   const entitlement = await getEntitlement(shipment.org_id, plan);
   if (!entitlement.canCreateDocument) {
     return Response.json(

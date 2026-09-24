@@ -1,19 +1,20 @@
 import { redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { InfoTip } from "@/components/info-tip";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
 import {
   PLANS,
   getEntitlement,
+  isPaidPlan,
   planFor,
   type PlanDefinition,
 } from "@/lib/billing";
-import { createClient } from "@/lib/supabase/server";
-import { startCheckoutAction } from "./actions";
-
-type SubscriptionRow = {
-  status: string;
-  period_end: string | null;
-};
+import {
+  getActiveSubscription,
+  getEffectivePlan,
+  isWithinPeriod,
+} from "@/lib/subscriptions";
+import { cancelSubscriptionAction, startCheckoutAction } from "./actions";
 
 function formatNgn(amount: number): string {
   return new Intl.NumberFormat("en-NG", {
@@ -149,24 +150,40 @@ export default async function BillingPage({
   const status = typeof params.status === "string" ? params.status : null;
   const limit = typeof params.limit === "string" ? params.limit : null;
 
-  const entitlement = await getEntitlement(organization.id, organization.plan);
-  const currentPlan = planFor(organization.plan);
+  const effectivePlan = await getEffectivePlan(
+    organization.id,
+    organization.plan,
+  );
+  const entitlement = await getEntitlement(organization.id, effectivePlan);
+  const currentPlan = planFor(effectivePlan);
 
-  const supabase = await createClient();
-  const { data: subscriptionData } = await supabase
-    .from("subscriptions")
-    .select("status, period_end")
-    .eq("org_id", organization.id)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const subscription = await getActiveSubscription(organization.id);
+  const canManage =
+    organization.role === "owner" || organization.role === "admin";
+  const canCancel =
+    canManage &&
+    subscription !== null &&
+    (subscription.status === "active" || subscription.status === "trialing") &&
+    isPaidPlan(subscription.plan);
 
-  const subscription = subscriptionData as SubscriptionRow | null;
-  const renewalLabel =
-    subscription?.period_end
-      ? `Renews on ${formatDate(subscription.period_end)}`
-      : "No active subscription";
+  const renewalLabel = (() => {
+    if (subscription === null) {
+      return "No active subscription";
+    }
+    if (subscription.status === "cancelled" && subscription.periodEnd) {
+      if (isWithinPeriod(subscription.periodEnd)) {
+        return `Access until ${formatDate(subscription.periodEnd)}`;
+      }
+    }
+    if (
+      (subscription.status === "active" ||
+        subscription.status === "trialing") &&
+      subscription.periodEnd
+    ) {
+      return `Renews on ${formatDate(subscription.periodEnd)}`;
+    }
+    return "No active subscription";
+  })();
 
   const banner =
     status === "success"
@@ -179,19 +196,31 @@ export default async function BillingPage({
             tone: "danger" as const,
             message: "We could not confirm that payment. Please try again.",
           }
-        : limit === "documents"
+        : status === "cancelled"
           ? {
-              tone: "warning" as const,
+              tone: "success" as const,
               message:
-                "You have reached your document limit. Upgrade to generate more.",
+                "Subscription cancelled. You keep access until the end of the current period.",
             }
-          : limit === "shipments"
+          : status === "cancel_failed"
             ? {
-                tone: "warning" as const,
+                tone: "danger" as const,
                 message:
-                  "You have reached your shipment limit. Upgrade to create more.",
+                  "We could not cancel your subscription. Please try again.",
               }
-            : null;
+            : limit === "documents"
+              ? {
+                  tone: "warning" as const,
+                  message:
+                    "You have reached your document limit. Upgrade to generate more.",
+                }
+              : limit === "shipments"
+                ? {
+                    tone: "warning" as const,
+                    message:
+                      "You have reached your shipment limit. Upgrade to create more.",
+                  }
+                : null;
 
   const bannerClass =
     banner?.tone === "success"
@@ -242,8 +271,8 @@ export default async function BillingPage({
             </p>
             <p className="mt-3 text-sm text-ink">{renewalLabel}</p>
             <p className="mt-2 text-xs text-muted">
-              Paid plans renew monthly via Paystack. To cancel, contact
-              support.
+              Paid plans renew monthly via Paystack. Owners and admins can
+              cancel at any time.
             </p>
           </section>
 
@@ -265,6 +294,33 @@ export default async function BillingPage({
             </div>
           </section>
         </div>
+
+        {canCancel ? (
+          <section className="mt-6 rounded-xl border border-hairline bg-white p-6">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+                Cancel subscription
+              </h2>
+              <InfoTip label="How cancellation works">
+                Your plan stays active until the end of the current billing
+                period. After that you move to the Free plan and you are not
+                charged again.
+              </InfoTip>
+            </div>
+            <p className="mt-3 max-w-2xl text-sm text-muted">
+              Cancel your subscription. You keep access until the end of the
+              current period and no further charges are made.
+            </p>
+            <form action={cancelSubscriptionAction} className="mt-4">
+              <button
+                type="submit"
+                className="rounded-md border border-danger/40 px-4 py-2 text-sm font-medium text-danger hover:bg-danger/5"
+              >
+                Cancel subscription
+              </button>
+            </form>
+          </section>
+        ) : null}
 
         <div className="mt-12">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">

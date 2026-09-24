@@ -1,5 +1,6 @@
 import { activateSubscription, isPaidPlan } from "@/lib/billing";
 import { verifyWebhookSignature } from "@/lib/paystack";
+import { cancelSubscriptionByProviderRef } from "@/lib/subscriptions";
 
 export const runtime = "nodejs";
 
@@ -8,6 +9,7 @@ type PaystackWebhookPayload = {
   data?: {
     reference?: string;
     subscription_code?: string;
+    email_token?: string;
     metadata?: Record<string, unknown> | null;
   };
 };
@@ -47,12 +49,28 @@ export async function POST(request: Request) {
     const plan = typeof metadata.plan === "string" ? metadata.plan : null;
     const orgId = typeof metadata.orgId === "string" ? metadata.orgId : null;
     const subscriptionCode = payload.data?.subscription_code;
+    const emailToken = payload.data?.email_token;
 
     if (orgId && plan && subscriptionCode && isPaidPlan(plan)) {
       try {
-        await activateSubscription(orgId, plan, subscriptionCode);
+        await activateSubscription(orgId, plan, subscriptionCode, emailToken);
       } catch {
         return new Response("Activation failed.", { status: 500 });
+      }
+    }
+  }
+
+  if (
+    payload.event === "subscription.disable" ||
+    payload.event === "subscription.not_renew"
+  ) {
+    const subscriptionCode = payload.data?.subscription_code;
+
+    if (subscriptionCode) {
+      try {
+        await cancelSubscriptionByProviderRef(subscriptionCode);
+      } catch {
+        return new Response("Cancellation failed.", { status: 500 });
       }
     }
   }

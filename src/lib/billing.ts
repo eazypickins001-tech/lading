@@ -196,6 +196,7 @@ export async function activateSubscription(
   orgId: string,
   plan: PlanId,
   reference: string,
+  providerToken?: string,
 ): Promise<void> {
   const admin = createAdminClient();
   const periodStart = new Date();
@@ -210,7 +211,15 @@ export async function activateSubscription(
     throw new Error("Could not update the organization plan.");
   }
 
-  const values = {
+  const values: {
+    plan: PlanId;
+    status: string;
+    provider: string;
+    provider_ref: string;
+    provider_token?: string;
+    period_start: string;
+    period_end: string;
+  } = {
     plan,
     status: "active",
     provider: "paystack",
@@ -218,6 +227,10 @@ export async function activateSubscription(
     period_start: periodStart.toISOString(),
     period_end: periodEnd.toISOString(),
   };
+
+  if (providerToken) {
+    values.provider_token = providerToken;
+  }
 
   const { data: existing } = await admin
     .from("subscriptions")
