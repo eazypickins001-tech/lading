@@ -265,6 +265,43 @@ export async function getShipmentWithItems(
   };
 }
 
+export async function generateShipmentReference(
+  orgId: string,
+  channel: TradeChannel,
+): Promise<string> {
+  const supabase = await createClient();
+  const year = new Date().getFullYear();
+  const prefix = `${channel === "import" ? "IMP" : "EXP"}-${year}-`;
+
+  const { count } = await supabase
+    .from("shipments")
+    .select("id", { count: "exact", head: true })
+    .eq("org_id", orgId)
+    .eq("channel", channel)
+    .like("reference", `${prefix}%`);
+
+  let sequence = (count ?? 0) + 1;
+  let candidate = `${prefix}${String(sequence).padStart(4, "0")}`;
+
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const { data } = await supabase
+      .from("shipments")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("reference", candidate)
+      .maybeSingle();
+
+    if (!data) {
+      return candidate;
+    }
+
+    sequence += 1;
+    candidate = `${prefix}${String(sequence).padStart(4, "0")}`;
+  }
+
+  return `${prefix}${Date.now().toString().slice(-5)}`;
+}
+
 export async function createShipment(
   input: CreateShipmentInput,
 ): Promise<string> {
@@ -275,11 +312,16 @@ export async function createShipment(
   const user = await getCurrentUser();
   const supabase = await createClient();
 
+  const reference =
+    input.reference && input.reference.trim() !== ""
+      ? input.reference.trim()
+      : await generateShipmentReference(organization.id, input.channel);
+
   const { data: shipment, error } = await supabase
     .from("shipments")
     .insert({
       org_id: organization.id,
-      reference: input.reference,
+      reference,
       channel: input.channel,
       origin_country: input.originCountry,
       destination_country: input.destinationCountry,

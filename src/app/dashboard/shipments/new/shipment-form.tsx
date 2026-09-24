@@ -72,14 +72,20 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
         <h2 className="text-lg font-semibold text-deep-harbor">Shipment</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <div>
-            <label htmlFor="reference" className={labelClass}>
-              Reference
-            </label>
+            <div className="flex items-center gap-1.5">
+              <label htmlFor="reference" className={labelClass}>
+                Reference
+              </label>
+              <InfoTip label="About the reference">
+                Leave this blank and Lading generates one for you, for example
+                IMP-2026-0001. Type your own to override it.
+              </InfoTip>
+            </div>
             <input
               id="reference"
               name="reference"
               type="text"
-              placeholder="NG-IMP-0042"
+              placeholder="Auto-generated"
               className={`${inputClass} font-mono`}
             />
           </div>
