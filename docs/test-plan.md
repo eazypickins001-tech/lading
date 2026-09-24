@@ -2,6 +2,28 @@
 
 Manual test plan for the Lading trade documentation platform, written against the seeded sample data and test accounts. Work top to bottom. Record Pass or Fail and any notes.
 
+## 0. Quick smoke test (about 10 minutes)
+
+Run this first after any deploy. If all ten pass, the core platform is healthy. Details are in the sections below.
+
+Login: `geraldnoria+tradera@gmail.com` / `Lading!Test2026`
+Base URL: `https://lading-eazypickins.vercel.app`
+
+| # | Action | Expected | Pass/Fail |
+|---|---|---|---|
+| 1 | Open the landing page and `/pricing` | Both load, pricing shows NGN amounts | |
+| 2 | Log in as Trader A | Redirected to `/dashboard`, org "Trader A Ltd" | |
+| 3 | Open `/dashboard/shipments` | Two shipments listed (IMP-2026-0001, EXP-2026-0001) | |
+| 4 | Open the import shipment (`154e31ad-6fa7-4e72-9948-9a8d4e99680c`) | Loads (not 404); total NGN 23,000,000 | |
+| 5 | On that shipment, open Commercial Invoice | PDF opens with seller/buyer and totals | |
+| 6 | Open `/dashboard/requirements`, import into NG, HS 8471.30 | Form M and PAAR required | |
+| 7 | On the import shipment, run consistency checks | Findings render with severities | |
+| 8 | Edit the shipment, change a field, save | Saved, redirected to the detail page | |
+| 9 | Log in as admin (`geraldnoria@gmail.com` / `Ldg!Admin#2026-52772104`), open `/admin` | Admin overview loads with user and org counts | |
+| 10 | Log in as Trader B (`geraldnoria+traderb@gmail.com`), open Trader A's import shipment URL | 404, no data (tenant isolation) | |
+
+If check 10 fails, stop and treat it as a security incident (see section 14).
+
 ## 1. Environments and access
 
 | Item | Value |
