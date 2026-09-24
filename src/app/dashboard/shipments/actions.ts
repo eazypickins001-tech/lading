@@ -9,6 +9,7 @@ import { runConsistencyChecks } from "@/lib/consistency";
 import { replaceFindings, setFindingResolved } from "@/lib/consistency-store";
 import type { TradeChannel, TransportMode } from "@/lib/documents/types";
 import { suggestHsCodes, type HsSuggestion } from "@/lib/hs-suggest";
+import { upsertParty } from "@/lib/parties";
 import { allowRequest } from "@/lib/rate-limit";
 import { createShipment, getShipmentWithItems, type CreateShipmentItemInput } from "@/lib/shipments";
 import { createClient } from "@/lib/supabase/server";
@@ -136,6 +137,51 @@ function parseItems(
   return items;
 }
 
+type PartyRole = "exporter" | "consignee" | "notify";
+
+const PARTY_LABELS: Record<PartyRole, string> = {
+  exporter: "Exporter name",
+  consignee: "Consignee name",
+  notify: "Notify party name",
+};
+
+function textField(formData: FormData, name: string): string {
+  return String(formData.get(name) ?? "").trim();
+}
+
+async function resolveParty(
+  formData: FormData,
+  role: PartyRole,
+  fieldErrors: Record<string, string>,
+): Promise<string | null> {
+  const mode = textField(formData, `${role}Mode`) || "new";
+
+  if (mode === "existing") {
+    return textField(formData, `${role}PartyId`) || null;
+  }
+
+  const name = textField(formData, `${role}Name`);
+  if (!name) {
+    if (role !== "notify") {
+      fieldErrors[`${role}Name`] = `${PARTY_LABELS[role]} is required.`;
+    }
+    return null;
+  }
+
+  const party = await upsertParty({
+    type: role,
+    name,
+    address: textField(formData, `${role}Address`) || null,
+    country: textField(formData, `${role}Country`) || null,
+    contactName: textField(formData, `${role}ContactName`) || null,
+    contactEmail: textField(formData, `${role}ContactEmail`) || null,
+    contactPhone: textField(formData, `${role}ContactPhone`) || null,
+    taxId: textField(formData, `${role}TaxId`) || null,
+  });
+
+  return party.id;
+}
+
 export async function createShipmentAction(
   state: CreateShipmentState,
   formData: FormData,
@@ -184,6 +230,18 @@ export async function createShipmentAction(
     return { error: "Please correct the highlighted fields.", fieldErrors };
   }
 
+  const exporterPartyId = await resolveParty(formData, "exporter", fieldErrors);
+  const consigneePartyId = await resolveParty(
+    formData,
+    "consignee",
+    fieldErrors,
+  );
+  const notifyPartyId = await resolveParty(formData, "notify", fieldErrors);
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return { error: "Please correct the highlighted fields.", fieldErrors };
+  }
+
   const channel = CHANNELS.includes(channelValue as TradeChannel)
     ? (channelValue as TradeChannel)
     : "import";
@@ -200,6 +258,9 @@ export async function createShipmentAction(
     incoterm,
     incotermPlace,
     currency,
+    exporterPartyId,
+    consigneePartyId,
+    notifyPartyId,
     items,
   });
 
@@ -264,6 +325,18 @@ export async function updateShipmentAction(
     return { error: "Please correct the highlighted fields.", fieldErrors };
   }
 
+  const exporterPartyId = await resolveParty(formData, "exporter", fieldErrors);
+  const consigneePartyId = await resolveParty(
+    formData,
+    "consignee",
+    fieldErrors,
+  );
+  const notifyPartyId = await resolveParty(formData, "notify", fieldErrors);
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return { error: "Please correct the highlighted fields.", fieldErrors };
+  }
+
   const channel = CHANNELS.includes(channelValue as TradeChannel)
     ? (channelValue as TradeChannel)
     : "import";
@@ -280,6 +353,9 @@ export async function updateShipmentAction(
     incoterm: string | null;
     incoterm_place: string | null;
     currency: string;
+    exporter_party_id: string | null;
+    consignee_party_id: string | null;
+    notify_party_id: string | null;
     reference?: string;
   } = {
     channel,
@@ -289,6 +365,9 @@ export async function updateShipmentAction(
     incoterm,
     incoterm_place: incotermPlace,
     currency,
+    exporter_party_id: exporterPartyId,
+    consignee_party_id: consigneePartyId,
+    notify_party_id: notifyPartyId,
   };
 
   if (reference) {

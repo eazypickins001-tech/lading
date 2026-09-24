@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { getCurrentUser } from "@/lib/auth";
+import { listParties } from "@/lib/parties";
 import { getShipmentWithItems, listIncoterms } from "@/lib/shipments";
 import { EditShipmentForm } from "./edit-form";
 
@@ -26,7 +27,10 @@ export default async function EditShipmentPage({
     notFound();
   }
 
-  const incoterms = await listIncoterms();
+  const [incoterms, parties] = await Promise.all([
+    listIncoterms(),
+    listParties(),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -45,7 +49,11 @@ export default async function EditShipmentPage({
         </p>
 
         <div className="mt-8">
-          <EditShipmentForm shipment={shipment} incoterms={incoterms} />
+          <EditShipmentForm
+            shipment={shipment}
+            incoterms={incoterms}
+            parties={parties}
+          />
         </div>
       </main>
     </div>

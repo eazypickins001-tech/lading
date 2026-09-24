@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
+import { listParties } from "@/lib/parties";
 import { listIncoterms } from "@/lib/shipments";
 import { ShipmentForm } from "./shipment-form";
 
@@ -15,7 +16,10 @@ export default async function NewShipmentPage() {
     redirect("/onboarding");
   }
 
-  const incoterms = await listIncoterms();
+  const [incoterms, parties] = await Promise.all([
+    listIncoterms(),
+    listParties(),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -34,7 +38,7 @@ export default async function NewShipmentPage() {
         </p>
 
         <div className="mt-8">
-          <ShipmentForm incoterms={incoterms} />
+          <ShipmentForm incoterms={incoterms} parties={parties} />
         </div>
       </main>
     </div>

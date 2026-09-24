@@ -1,6 +1,11 @@
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "openrouter/free";
-const REQUEST_TIMEOUT_MS = 45000;
+const DEFAULT_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
+const REQUEST_TIMEOUT_MS = 30000;
+
+const FALLBACK_MODELS = [
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "liquid/lfm-2.5-2.6b:free",
+];
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -11,6 +16,7 @@ export type ChatOptions = {
   maxTokens?: number;
   temperature?: number;
   model?: string;
+  validate?: (content: string) => boolean;
 };
 
 export function aiModel(): string {
@@ -21,9 +27,10 @@ export function isAiConfigured(): boolean {
   return Boolean(process.env.OPENROUTER_API_KEY);
 }
 
-export async function chatComplete(
+async function singleChat(
   messages: ChatMessage[],
-  options: ChatOptions = {},
+  options: ChatOptions,
+  model: string,
 ): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -42,9 +49,9 @@ export async function chatComplete(
       },
       signal: controller.signal,
       body: JSON.stringify({
-        model: options.model ?? aiModel(),
+        model,
         messages,
-        max_tokens: options.maxTokens ?? 2048,
+        max_tokens: options.maxTokens ?? 4096,
         temperature: options.temperature ?? 0.2,
       }),
     });
@@ -61,4 +68,37 @@ export async function chatComplete(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function chatComplete(
+  messages: ChatMessage[],
+  options: ChatOptions = {},
+): Promise<string> {
+  const primary = options.model ?? aiModel();
+  const chain = [
+    primary,
+    ...FALLBACK_MODELS.filter((model) => model !== primary),
+  ];
+
+  let lastError: unknown = null;
+
+  for (const model of chain) {
+    try {
+      const content = await singleChat(messages, options, model);
+      if (
+        content.length > 0 &&
+        (!options.validate || options.validate(content))
+      ) {
+        return content;
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  return "";
 }

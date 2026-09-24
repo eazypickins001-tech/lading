@@ -6,6 +6,8 @@ import { useState } from "react";
 export type NavKey =
   | "dashboard"
   | "shipments"
+  | "parties"
+  | "products"
   | "requirements"
   | "landedCost"
   | "tradeTerms"
@@ -15,6 +17,8 @@ export type NavKey =
 const links: { key: NavKey; href: string; label: string }[] = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard" },
   { key: "shipments", href: "/dashboard/shipments", label: "Shipments" },
+  { key: "parties", href: "/dashboard/parties", label: "Contacts" },
+  { key: "products", href: "/dashboard/products", label: "Products" },
   { key: "requirements", href: "/dashboard/requirements", label: "Requirements" },
   { key: "landedCost", href: "/dashboard/landed-cost", label: "Landed cost" },
   { key: "tradeTerms", href: "/dashboard/trade-terms", label: "Trade terms" },

@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import { CountrySelect } from "@/components/country-select";
 import { InfoTip } from "@/components/info-tip";
+import { PartySection } from "@/components/party-section";
 import type { HsSuggestion } from "@/lib/hs-suggest";
+import type { Party } from "@/lib/party-types";
 import type { Incoterm, ShipmentItem, ShipmentWithItems } from "@/lib/shipments";
 import { suggestHsForLineAction, updateShipmentAction } from "../../actions";
 
@@ -64,9 +66,11 @@ function toLineItem(item: ShipmentItem): LineItem {
 export function EditShipmentForm({
   shipment,
   incoterms,
+  parties,
 }: {
   shipment: ShipmentWithItems;
   incoterms: Incoterm[];
+  parties: Party[];
 }) {
   const [state, action, pending] = useActionState(
     updateShipmentAction,
@@ -326,6 +330,39 @@ export function EditShipmentForm({
           </div>
         </div>
       </section>
+
+      <PartySection
+        role="exporter"
+        title="Seller / Exporter"
+        description="The party selling or shipping the goods."
+        parties={parties}
+        linkedPartyId={shipment.exporter_party_id}
+        linkedParty={shipment.exporter}
+        required
+        fieldError={fieldError}
+      />
+
+      <PartySection
+        role="consignee"
+        title="Buyer / Consignee"
+        description="The party receiving the goods."
+        parties={parties}
+        linkedPartyId={shipment.consignee_party_id}
+        linkedParty={shipment.consignee}
+        required
+        fieldError={fieldError}
+      />
+
+      <PartySection
+        role="notify"
+        title="Notify Party"
+        description="Optional party to notify on arrival."
+        parties={parties}
+        linkedPartyId={shipment.notify_party_id}
+        linkedParty={shipment.notify}
+        required={false}
+        fieldError={fieldError}
+      />
 
       <section className="rounded-xl border border-hairline bg-white p-6">
         <div className="flex items-center justify-between">

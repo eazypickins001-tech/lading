@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import { CountrySelect } from "@/components/country-select";
 import { InfoTip } from "@/components/info-tip";
+import { PartySection } from "@/components/party-section";
 import type { HsSuggestion } from "@/lib/hs-suggest";
+import type { Party } from "@/lib/party-types";
 import type { Incoterm } from "@/lib/shipments";
 import { createShipmentAction, suggestHsForLineAction } from "../actions";
 
@@ -47,7 +49,13 @@ function emptyItem(): LineItem {
   };
 }
 
-export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
+export function ShipmentForm({
+  incoterms,
+  parties,
+}: {
+  incoterms: Incoterm[];
+  parties: Party[];
+}) {
   const [state, action, pending] = useActionState(
     createShipmentAction,
     undefined,
@@ -283,6 +291,39 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
           </div>
         </div>
       </section>
+
+      <PartySection
+        role="exporter"
+        title="Seller / Exporter"
+        description="The party selling or shipping the goods."
+        parties={parties}
+        linkedPartyId={null}
+        linkedParty={null}
+        required
+        fieldError={fieldError}
+      />
+
+      <PartySection
+        role="consignee"
+        title="Buyer / Consignee"
+        description="The party receiving the goods."
+        parties={parties}
+        linkedPartyId={null}
+        linkedParty={null}
+        required
+        fieldError={fieldError}
+      />
+
+      <PartySection
+        role="notify"
+        title="Notify Party"
+        description="Optional party to notify on arrival."
+        parties={parties}
+        linkedPartyId={null}
+        linkedParty={null}
+        required={false}
+        fieldError={fieldError}
+      />
 
       <section className="rounded-xl border border-hairline bg-white p-6">
         <div className="flex items-center justify-between">

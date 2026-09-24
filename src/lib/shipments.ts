@@ -23,6 +23,7 @@ export type Shipment = {
   status: ShipmentStatus;
   exporter_party_id: string | null;
   consignee_party_id: string | null;
+  notify_party_id: string | null;
   agent_org_id: string | null;
   created_at: string;
   updated_at: string;
@@ -51,6 +52,7 @@ export type ShipmentWithItems = Shipment & {
   incotermName: string | null;
   exporter: DocumentParty | null;
   consignee: DocumentParty | null;
+  notify: DocumentParty | null;
 };
 
 export type CreateShipmentItemInput = {
@@ -72,6 +74,9 @@ export type CreateShipmentInput = {
   incoterm: string | null;
   incotermPlace: string | null;
   currency: string;
+  exporterPartyId: string | null;
+  consigneePartyId: string | null;
+  notifyPartyId: string | null;
   items: CreateShipmentItemInput[];
 };
 
@@ -100,6 +105,7 @@ type ShipmentRow = {
   status: ShipmentStatus;
   exporter_party_id: string | null;
   consignee_party_id: string | null;
+  notify_party_id: string | null;
   agent_org_id: string | null;
   created_at: string;
   updated_at: string;
@@ -136,6 +142,7 @@ type ShipmentDetailRow = ShipmentRow & {
   organization: MaybeArray<{ id: string; name: string; country: string | null }>;
   exporter: MaybeArray<PartyRow>;
   consignee: MaybeArray<PartyRow>;
+  notify: MaybeArray<PartyRow>;
 };
 
 function first<T>(value: MaybeArray<T>): T | null {
@@ -168,6 +175,7 @@ function toShipment(row: ShipmentRow): Shipment {
     status: row.status,
     exporter_party_id: row.exporter_party_id,
     consignee_party_id: row.consignee_party_id,
+    notify_party_id: row.notify_party_id,
     agent_org_id: row.agent_org_id,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -234,7 +242,7 @@ export async function getShipmentWithItems(
   const { data, error } = await supabase
     .from("shipments")
     .select(
-      "*, shipment_items(*), organization:organizations!org_id(id, name, country), exporter:parties!exporter_party_id(id, name, address, country, contact_name, contact_email, contact_phone, tax_id), consignee:parties!consignee_party_id(id, name, address, country, contact_name, contact_email, contact_phone, tax_id)",
+      "*, shipment_items(*), organization:organizations!org_id(id, name, country), exporter:parties!exporter_party_id(id, name, address, country, contact_name, contact_email, contact_phone, tax_id), consignee:parties!consignee_party_id(id, name, address, country, contact_name, contact_email, contact_phone, tax_id), notify:parties!notify_party_id(id, name, address, country, contact_name, contact_email, contact_phone, tax_id)",
     )
     .eq("id", id)
     .order("created_at", { referencedTable: "shipment_items", ascending: true })
@@ -248,6 +256,7 @@ export async function getShipmentWithItems(
   const organization = first(row.organization);
   const exporter = first(row.exporter);
   const consignee = first(row.consignee);
+  const notify = first(row.notify);
 
   let incotermName: string | null = null;
   if (row.incoterm) {
@@ -270,6 +279,7 @@ export async function getShipmentWithItems(
     incotermName,
     exporter: exporter ? toParty(exporter) : null,
     consignee: consignee ? toParty(consignee) : null,
+    notify: notify ? toParty(notify) : null,
   };
 }
 
@@ -337,6 +347,9 @@ export async function createShipment(
       incoterm: input.incoterm,
       incoterm_place: input.incotermPlace,
       currency: input.currency,
+      exporter_party_id: input.exporterPartyId,
+      consignee_party_id: input.consigneePartyId,
+      notify_party_id: input.notifyPartyId,
       created_by: user?.id ?? null,
     })
     .select("id")
@@ -461,6 +474,7 @@ export function toDocumentPayload(
     },
     exporter: shipment.exporter,
     consignee: shipment.consignee,
+    notify: shipment.notify,
     items: shipment.items.map((item) => ({
       description: item.description,
       hsCode: item.hs_code,

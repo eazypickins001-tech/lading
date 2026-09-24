@@ -68,5 +68,6 @@ export type ShipmentDocumentPayload = {
   organization: { name: string; country: string | null };
   exporter: DocumentParty | null;
   consignee: DocumentParty | null;
+  notify: DocumentParty | null;
   items: DocumentLineItem[];
 };
