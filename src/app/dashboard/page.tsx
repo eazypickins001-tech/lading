@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { NextSteps } from "@/components/next-steps";
 import { ProductTour } from "@/components/product-tour";
+import { isAdminEmail } from "@/lib/admin";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
 import { getOnboardingState } from "@/lib/onboarding";
 import { getDashboardCounts } from "@/lib/shipments";
@@ -91,6 +92,25 @@ export default async function DashboardPage() {
             Requirements checker
           </Link>
         </div>
+
+        {isAdminEmail(user.email) ? (
+          <Link
+            href="/dashboard/data"
+            className="mt-6 flex items-center justify-between rounded-xl border border-hairline bg-white p-6 transition-colors hover:border-signal-teal"
+          >
+            <div>
+              <p className="text-sm font-semibold text-deep-harbor">
+                Data sources
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Monitor syncs and review staged changes.
+              </p>
+            </div>
+            <span className="font-mono text-xs uppercase tracking-widest text-signal-teal">
+              Admin
+            </span>
+          </Link>
+        ) : null}
 
         <NextSteps state={onboarding} />
       </main>
