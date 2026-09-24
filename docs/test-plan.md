@@ -176,3 +176,29 @@ These verify the audit findings. Run each after the corresponding fix is applied
 - [ ] Vercel deployment is Ready and env vars present for Production and Preview
 - [ ] Paystack webhook URL set
 - [ ] Supabase redirect URLs include `/auth/callback`
+
+
+Test accounts ready. Start here.
+Login
+URL: https://lading-eazypickins.vercel.app (or lading-three.vercel.app)
+Role
+Admin (you)
+Trader A
+Trader B
+Agent
+All are pre-confirmed, so they work despite email confirmation being on.
+Quick test path (Trader A already has a seeded shipment)
+1. Log in as Trader A → open the seeded shipment:
+https://lading-eazypickins.vercel.app/dashboard/shipments/154e31ad-6fa7-4e72-9948-9a8d4e99680c
+(import CN→NG, CIF Apapa, 2 line items: t-shirts + laptops)
+2. On that page check: Documents required (should show Form M + PAAR required, SONCAP/NAFDAC conditional), Consistency checks (run them - expect warnings for missing exporter/consignee), and download the Commercial Invoice / Packing List / Proforma.
+3. Edit shipment (the page that used to 404) - change something and save.
+4. Go to Requirements, Landed cost (HS 610910), Trade terms, Profile, Billing.
+5. As Admin → the Admin card → /admin (users, orgs, subscriptions), then /dashboard/data and run the FX sync.
+Most important test - tenant isolation (C1 fix)
+1. Log in as Trader B.
+2. Try to open Trader A's shipment: .../dashboard/shipments/154e31ad-6fa7-4e72-9948-9a8d4e99680c
+3. Expected: 404 / not found. Also try the document URL .../api/shipments/154e31ad-.../documents/commercial-invoice - expect 404.
+One caveat
+Do not use "Sign up" with a brand-new email - email confirmation is on and there's no SMTP, so the confirmation email won't arrive and you can't log in. The full test plan is in docs/test-plan.md.
+Want me to temporarily disable email confirmation so you can also test the real signup flow, or leave it and set up SMTP?
