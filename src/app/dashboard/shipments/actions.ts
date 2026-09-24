@@ -7,6 +7,7 @@ import { getEntitlement, incrementUsage } from "@/lib/billing";
 import { runConsistencyChecks } from "@/lib/consistency";
 import { replaceFindings, setFindingResolved } from "@/lib/consistency-store";
 import type { TradeChannel, TransportMode } from "@/lib/documents/types";
+import { suggestHsCodes, type HsSuggestion } from "@/lib/hs-suggest";
 import { createShipment, getShipmentWithItems, type CreateShipmentItemInput } from "@/lib/shipments";
 
 const CHANNELS: TradeChannel[] = ["import", "export"];
@@ -25,6 +26,46 @@ export type CreateShipmentState =
       fieldErrors?: Record<string, string>;
     }
   | undefined;
+
+export type SuggestHsForLineResult =
+  | { status: "success"; suggestions: HsSuggestion[] }
+  | { status: "error"; message: string };
+
+export async function suggestHsForLineAction(
+  formData: FormData,
+): Promise<SuggestHsForLineResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { status: "error", message: "Please sign in to use the assistant." };
+  }
+
+  const description = String(formData.get("description") ?? "").trim();
+  const destination =
+    String(formData.get("destination") ?? "NG").trim().toUpperCase() || "NG";
+
+  if (description.length < 3) {
+    return {
+      status: "error",
+      message: "Enter a short product description first.",
+    };
+  }
+
+  try {
+    const suggestions = await suggestHsCodes(description, destination);
+    if (suggestions.length === 0) {
+      return {
+        status: "error",
+        message: "No suggestions found. Try a more specific description.",
+      };
+    }
+    return { status: "success", suggestions };
+  } catch {
+    return {
+      status: "error",
+      message: "The AI assistant is unavailable right now. Please try again.",
+    };
+  }
+}
 
 function parseNumber(value: FormDataEntryValue | null): number | null {
   const raw = String(value ?? "").trim();

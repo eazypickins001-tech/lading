@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { CountrySelect } from "@/components/country-select";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { InfoTip } from "@/components/info-tip";
 import { RequiredDocumentsList } from "@/components/required-documents";
@@ -118,26 +119,24 @@ export default async function RequirementsPage({
               <label htmlFor="originCountry" className={labelClass}>
                 Origin country
               </label>
-              <input
+              <CountrySelect
                 id="originCountry"
                 name="originCountry"
-                type="text"
                 defaultValue={originCountry}
-                placeholder="NG"
-                className={`${inputClass} font-mono uppercase`}
+                placeholder="Search country"
+                className={inputClass}
               />
             </div>
             <div>
               <label htmlFor="destinationCountry" className={labelClass}>
                 Destination country
               </label>
-              <input
+              <CountrySelect
                 id="destinationCountry"
                 name="destinationCountry"
-                type="text"
                 defaultValue={destinationCountry}
-                placeholder="NG"
-                className={`${inputClass} font-mono uppercase`}
+                placeholder="Search country"
+                className={inputClass}
               />
             </div>
             <div>

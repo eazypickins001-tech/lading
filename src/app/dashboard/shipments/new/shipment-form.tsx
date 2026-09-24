@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
+import { CountrySelect } from "@/components/country-select";
 import { InfoTip } from "@/components/info-tip";
+import type { HsSuggestion } from "@/lib/hs-suggest";
 import type { Incoterm } from "@/lib/shipments";
-import { createShipmentAction } from "../actions";
+import { createShipmentAction, suggestHsForLineAction } from "../actions";
 
 type LineItem = {
   key: string;
@@ -22,6 +24,12 @@ const inputClass =
 const labelClass = "block text-sm font-medium text-ink";
 const cellClass =
   "w-full rounded-md border border-hairline bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-signal-teal focus:ring-1 focus:ring-signal-teal";
+
+const confidenceStyles: Record<string, string> = {
+  high: "bg-success/10 text-success",
+  medium: "bg-warning/10 text-warning",
+  low: "bg-cloud text-muted",
+};
 
 let rowCounter = 0;
 
@@ -45,6 +53,12 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
     undefined,
   );
   const [items, setItems] = useState<LineItem[]>(() => [emptyItem()]);
+  const [hsSuggestions, setHsSuggestions] = useState<
+    Record<string, HsSuggestion[]>
+  >({});
+  const [hsLoadingKey, setHsLoadingKey] = useState<string | null>(null);
+  const [hsErrors, setHsErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement>(null);
 
   const updateItem = (key: string, patch: Partial<LineItem>) => {
     setItems((current) =>
@@ -64,10 +78,62 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
     );
   };
 
+  const handleSuggestHs = async (item: LineItem) => {
+    if (!item.description.trim()) {
+      setHsErrors((current) => ({
+        ...current,
+        [item.key]: "Enter a description first.",
+      }));
+      return;
+    }
+
+    setHsLoadingKey(item.key);
+    setHsErrors((current) => {
+      const next = { ...current };
+      delete next[item.key];
+      return next;
+    });
+
+    const formData = new FormData();
+    formData.set("description", item.description);
+    const destination = formRef.current
+      ? String(
+          new FormData(formRef.current).get("destinationCountry") ?? "NG",
+        )
+      : "NG";
+    formData.set("destination", destination.trim() || "NG");
+
+    try {
+      const result = await suggestHsForLineAction(formData);
+      if (result.status === "success") {
+        setHsSuggestions((current) => ({
+          ...current,
+          [item.key]: result.suggestions,
+        }));
+      } else {
+        setHsErrors((current) => ({
+          ...current,
+          [item.key]: result.message,
+        }));
+      }
+    } finally {
+      setHsLoadingKey(null);
+    }
+  };
+
+  const applySuggestion = (key: string, code: string) => {
+    updateItem(key, { hsCode: code });
+    setHsSuggestions((current) => {
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+
   const fieldError = (name: string) => state?.fieldErrors?.[name];
 
   return (
-    <form action={action} className="space-y-8">
+    <form ref={formRef} action={action} className="space-y-8">
       <section className="rounded-xl border border-hairline bg-white p-6">
         <h2 className="text-lg font-semibold text-deep-harbor">Shipment</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -110,11 +176,11 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
             <label htmlFor="originCountry" className={labelClass}>
               Origin country
             </label>
-            <input
+            <CountrySelect
               id="originCountry"
               name="originCountry"
-              type="text"
-              placeholder="CN"
+              defaultValue="CN"
+              placeholder="Search country"
               required
               className={inputClass}
             />
@@ -129,11 +195,11 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
             <label htmlFor="destinationCountry" className={labelClass}>
               Destination country
             </label>
-            <input
+            <CountrySelect
               id="destinationCountry"
               name="destinationCountry"
-              type="text"
-              placeholder="NG"
+              defaultValue="NG"
+              placeholder="Search country"
               required
               className={inputClass}
             />
@@ -264,12 +330,22 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
                   />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <label className={labelClass}>HS code</label>
-                    <InfoTip label="About the HS code">
-                      The customs classification code for the product, used to
-                      look up duties and document rules.
-                    </InfoTip>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <label className={labelClass}>HS code</label>
+                      <InfoTip label="About the HS code">
+                        The customs classification code for the product, used to
+                        look up duties and document rules.
+                      </InfoTip>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSuggestHs(item)}
+                      disabled={hsLoadingKey === item.key}
+                      className="rounded-md border border-hairline px-2 py-1 text-xs font-medium text-ink hover:bg-white disabled:opacity-60"
+                    >
+                      {hsLoadingKey === item.key ? "Thinking..." : "Suggest"}
+                    </button>
                   </div>
                   <input
                     name="itemHsCode"
@@ -281,6 +357,37 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
                     placeholder="1801.00"
                     className={`${cellClass} font-mono`}
                   />
+                  {hsErrors[item.key] ? (
+                    <p className="mt-1 text-xs text-danger">
+                      {hsErrors[item.key]}
+                    </p>
+                  ) : null}
+                  {hsSuggestions[item.key]?.length ? (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {hsSuggestions[item.key].slice(0, 3).map((suggestion) => (
+                        <button
+                          key={`${item.key}-${suggestion.code}-${suggestion.description}`}
+                          type="button"
+                          onClick={() =>
+                            applySuggestion(item.key, suggestion.code)
+                          }
+                          className="flex max-w-full items-center gap-1.5 rounded-full border border-hairline bg-white px-2.5 py-1 text-left text-xs text-ink hover:border-signal-teal"
+                        >
+                          <span className="font-mono font-semibold text-deep-harbor">
+                            {suggestion.code}
+                          </span>
+                          <span className="truncate text-muted">
+                            {suggestion.description}
+                          </span>
+                          <span
+                            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${confidenceStyles[suggestion.confidence]}`}
+                          >
+                            {suggestion.confidence}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
                 <div>
                   <label className={labelClass}>Unit</label>
