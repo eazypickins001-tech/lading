@@ -1,6 +1,12 @@
 import { generateCommercialInvoice } from "@/lib/documents/invoice";
 import { generatePackingList } from "@/lib/documents/packing-list";
 import { generateProformaInvoice } from "@/lib/documents/proforma";
+import { generateBillOfLading } from "@/lib/documents/bill-of-lading";
+import { generateAirWaybill } from "@/lib/documents/airway-bill";
+import { generateCertificateOfOrigin } from "@/lib/documents/certificate-of-origin";
+import { generateShippersLetterOfInstruction } from "@/lib/documents/shippers-letter-of-instruction";
+import { generateVgmDeclaration } from "@/lib/documents/vgm-declaration";
+import { generatePackingDeclaration } from "@/lib/documents/packing-declaration";
 import type { DocType, ShipmentDocumentPayload } from "@/lib/documents/types";
 import { recordAuditEvent } from "@/lib/audit";
 import { getCurrentUser } from "@/lib/auth";
@@ -29,6 +35,30 @@ const generators: Record<string, { docType: DocType; generate: Generator }> = {
   "proforma-invoice": {
     docType: "proforma_invoice",
     generate: generateProformaInvoice,
+  },
+  "bill-of-lading": {
+    docType: "bill_of_lading",
+    generate: generateBillOfLading,
+  },
+  "airway-bill": {
+    docType: "airway_bill",
+    generate: generateAirWaybill,
+  },
+  "certificate-of-origin": {
+    docType: "certificate_of_origin",
+    generate: generateCertificateOfOrigin,
+  },
+  "shippers-letter-of-instruction": {
+    docType: "shippers_letter_of_instruction",
+    generate: generateShippersLetterOfInstruction,
+  },
+  "vgm-declaration": {
+    docType: "vgm_declaration",
+    generate: generateVgmDeclaration,
+  },
+  "packing-declaration": {
+    docType: "packing_declaration",
+    generate: generatePackingDeclaration,
   },
 };
 

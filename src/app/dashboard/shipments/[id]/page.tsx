@@ -14,6 +14,15 @@ const documents = [
   { type: "commercial-invoice", label: "Commercial Invoice" },
   { type: "packing-list", label: "Packing List" },
   { type: "proforma-invoice", label: "Proforma Invoice" },
+  { type: "certificate-of-origin", label: "Certificate of Origin" },
+  { type: "bill-of-lading", label: "Bill of Lading" },
+  { type: "airway-bill", label: "Air Waybill" },
+  {
+    type: "shippers-letter-of-instruction",
+    label: "Shipper's Letter of Instruction",
+  },
+  { type: "vgm-declaration", label: "VGM Declaration" },
+  { type: "packing-declaration", label: "Packing Declaration" },
 ];
 
 export default async function ShipmentDetailPage({

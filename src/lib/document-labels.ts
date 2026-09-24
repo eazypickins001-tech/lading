@@ -14,6 +14,9 @@ export const docTypeLabels: Record<DocType, string> = {
   nepc_certificate: "NEPC Certificate",
   phytosanitary: "Phytosanitary Certificate",
   insurance_certificate: "Insurance Certificate",
+  shippers_letter_of_instruction: "Shipper's Letter of Instruction",
+  vgm_declaration: "VGM Declaration",
+  packing_declaration: "Packing Declaration",
   other: "Other Document",
 };
 

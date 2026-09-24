@@ -31,6 +31,9 @@ export type DocType =
   | "nepc_certificate"
   | "phytosanitary"
   | "insurance_certificate"
+  | "shippers_letter_of_instruction"
+  | "vgm_declaration"
+  | "packing_declaration"
   | "other";
 
 export type DocumentParty = {
