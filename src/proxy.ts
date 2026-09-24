@@ -25,7 +25,22 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const path = request.nextUrl.pathname;
+  const isProtectedRoute =
+    path.startsWith("/dashboard") || path.startsWith("/onboarding");
+  const isAuthRoute = path === "/login" || path === "/signup";
+
+  if (isProtectedRoute && !user) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (isAuthRoute && user) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
 
   return response;
 }
