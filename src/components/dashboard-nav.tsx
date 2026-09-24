@@ -3,12 +3,20 @@
 import Link from "next/link";
 import { useState } from "react";
 
-export type NavKey = "dashboard" | "shipments" | "requirements" | "profile";
+export type NavKey =
+  | "dashboard"
+  | "shipments"
+  | "requirements"
+  | "landedCost"
+  | "tradeTerms"
+  | "profile";
 
 const links: { key: NavKey; href: string; label: string }[] = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard" },
   { key: "shipments", href: "/dashboard/shipments", label: "Shipments" },
   { key: "requirements", href: "/dashboard/requirements", label: "Requirements" },
+  { key: "landedCost", href: "/dashboard/landed-cost", label: "Landed cost" },
+  { key: "tradeTerms", href: "/dashboard/trade-terms", label: "Trade terms" },
   { key: "profile", href: "/dashboard/profile", label: "Profile" },
 ];
 
