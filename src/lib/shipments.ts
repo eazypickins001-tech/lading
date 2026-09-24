@@ -134,7 +134,6 @@ type PartyRow = {
 type ShipmentDetailRow = ShipmentRow & {
   shipment_items: ShipmentItemRow[] | null;
   organization: MaybeArray<{ id: string; name: string; country: string | null }>;
-  incoterms: MaybeArray<{ name: string }>;
   exporter: MaybeArray<PartyRow>;
   consignee: MaybeArray<PartyRow>;
 };
@@ -235,7 +234,7 @@ export async function getShipmentWithItems(
   const { data, error } = await supabase
     .from("shipments")
     .select(
-      "*, shipment_items(*), organization:organizations!org_id(id, name, country), incoterms(name), exporter:parties!exporter_party_id(id, name, address, country, contact_name, contact_email, contact_phone, tax_id), consignee:parties!consignee_party_id(id, name, address, country, contact_name, contact_email, contact_phone, tax_id)",
+      "*, shipment_items(*), organization:organizations!org_id(id, name, country), exporter:parties!exporter_party_id(id, name, address, country, contact_name, contact_email, contact_phone, tax_id), consignee:parties!consignee_party_id(id, name, address, country, contact_name, contact_email, contact_phone, tax_id)",
     )
     .eq("id", id)
     .order("created_at", { referencedTable: "shipment_items", ascending: true })
@@ -247,9 +246,18 @@ export async function getShipmentWithItems(
 
   const row = data as ShipmentDetailRow;
   const organization = first(row.organization);
-  const incoterm = first(row.incoterms);
   const exporter = first(row.exporter);
   const consignee = first(row.consignee);
+
+  let incotermName: string | null = null;
+  if (row.incoterm) {
+    const { data: incotermRow } = await supabase
+      .from("incoterms")
+      .select("name")
+      .eq("code", row.incoterm)
+      .maybeSingle();
+    incotermName = (incotermRow as { name: string } | null)?.name ?? null;
+  }
 
   return {
     ...toShipment(row),
@@ -259,7 +267,7 @@ export async function getShipmentWithItems(
       name: organization?.name ?? "",
       country: organization?.country ?? null,
     },
-    incotermName: incoterm?.name ?? null,
+    incotermName,
     exporter: exporter ? toParty(exporter) : null,
     consignee: consignee ? toParty(consignee) : null,
   };
