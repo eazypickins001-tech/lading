@@ -30,12 +30,22 @@ type SnapshotRow = {
   diff_summary: string | null;
 };
 
+type ParsedFxItem = {
+  currency: string;
+  rateNgn: number;
+};
+
+type ParsedValue = {
+  kind: "fx";
+  items: ParsedFxItem[];
+};
+
 type StagedChangeRow = {
   id: string;
   source_id: string;
   entity_type: string;
   entity_key: string;
-  new_value: { excerpt?: string } | null;
+  new_value: { excerpt?: string; parsed?: ParsedValue } | null;
   detected_at: string;
   data_sources: { name: string } | { name: string }[] | null;
 };
@@ -285,6 +295,24 @@ export default async function DataSourcesPage() {
                           <p className="mt-3 max-w-3xl text-sm text-ink">
                             {change.new_value.excerpt}
                           </p>
+                        ) : null}
+                        {change.new_value?.parsed?.items?.length ? (
+                          <div className="mt-3">
+                            <p className="font-mono text-xs uppercase tracking-widest text-muted">
+                              {change.new_value.parsed.items.length} rates parsed
+                            </p>
+                            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-ink">
+                              {change.new_value.parsed.items.map((item) => (
+                                <li key={item.currency}>
+                                  {item.currency}{" "}
+                                  {item.rateNgn.toLocaleString("en-NG", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         ) : null}
                       </div>
                       <div className="flex gap-3">

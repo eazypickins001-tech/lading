@@ -8,6 +8,64 @@ import { ensureAllPaystackPlans } from "@/lib/payment-plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDueSources, runSourceSync } from "@/lib/sync/engine";
 
+type ParsedFxItem = {
+  currency: string;
+  rateNgn: number;
+};
+
+type ParsedFx = {
+  kind: "fx";
+  items: ParsedFxItem[];
+};
+
+type StagedChangeForApproval = {
+  entity_type: string;
+  new_value: unknown;
+  data_sources: { base_url: string } | { base_url: string }[] | null;
+};
+
+function readParsedFx(value: unknown): ParsedFx | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const parsed = (value as { parsed?: unknown }).parsed;
+  if (typeof parsed !== "object" || parsed === null) {
+    return null;
+  }
+
+  const kind = (parsed as { kind?: unknown }).kind;
+  const items = (parsed as { items?: unknown }).items;
+
+  if (kind !== "fx" || !Array.isArray(items)) {
+    return null;
+  }
+
+  const valid = items.filter((item): item is ParsedFxItem => {
+    if (typeof item !== "object" || item === null) {
+      return false;
+    }
+    const candidate = item as { currency?: unknown; rateNgn?: unknown };
+    return (
+      typeof candidate.currency === "string" &&
+      typeof candidate.rateNgn === "number" &&
+      Number.isFinite(candidate.rateNgn)
+    );
+  });
+
+  return valid.length > 0 ? { kind: "fx", items: valid } : null;
+}
+
+function sourceBaseUrl(value: StagedChangeForApproval["data_sources"]): string | null {
+  if (!value) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    return value[0]?.base_url ?? null;
+  }
+  return value.base_url;
+}
+
 async function requireAdmin() {
   const user = await getCurrentUser();
   if (!user || !isAdminEmail(user.email)) {
@@ -49,6 +107,13 @@ export async function approveChangeAction(formData: FormData): Promise<void> {
   }
 
   const supabase = createAdminClient();
+
+  const { data } = await supabase
+    .from("staged_changes")
+    .select("entity_type, new_value, data_sources(base_url)")
+    .eq("id", changeId)
+    .maybeSingle();
+
   await supabase
     .from("staged_changes")
     .update({
@@ -57,6 +122,24 @@ export async function approveChangeAction(formData: FormData): Promise<void> {
       reviewed_at: new Date().toISOString(),
     })
     .eq("id", changeId);
+
+  const change = (data ?? null) as StagedChangeForApproval | null;
+  const parsed = readParsedFx(change?.new_value);
+
+  if (change?.entity_type === "fx" && parsed) {
+    const sourceUrl = sourceBaseUrl(change.data_sources);
+    const effectiveDate = new Date().toISOString().slice(0, 10);
+
+    await supabase.from("fx_rates").upsert(
+      parsed.items.map((item) => ({
+        currency: item.currency,
+        rate_ngn: item.rateNgn,
+        source_url: sourceUrl,
+        effective_date: effectiveDate,
+      })),
+      { onConflict: "currency,effective_date" },
+    );
+  }
 
   revalidatePath("/dashboard/data");
 }

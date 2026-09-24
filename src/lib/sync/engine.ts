@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parseSource } from "@/lib/sync/parsers";
 
 export type SyncResult = {
   sourceId: string;
@@ -17,6 +18,7 @@ export type DataSourceRecord = {
   base_url: string;
   access_method: SourceAccessMethod;
   cadence: string;
+  parser_key: string | null;
   content_hash: string | null;
   last_checked_at: string | null;
   last_changed_at: string | null;
@@ -109,6 +111,7 @@ export async function syncSource(source: DataSourceRecord): Promise<SyncResult> 
       .eq("id", source.id);
 
     const excerpt = normalized.slice(0, 400);
+    const parsed = parseSource(source.parser_key, normalized);
 
     await supabase.from("source_snapshots").insert({
       source_id: source.id,
@@ -122,7 +125,7 @@ export async function syncSource(source: DataSourceRecord): Promise<SyncResult> 
       entity_type: source.category,
       entity_key: source.name,
       old_value: { hash: source.content_hash },
-      new_value: { hash: newHash, excerpt },
+      new_value: parsed ? { hash: newHash, excerpt, parsed } : { hash: newHash, excerpt },
       status: "pending",
     });
 

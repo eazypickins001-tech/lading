@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { InfoTip } from "@/components/info-tip";
 import { getCurrentUser } from "@/lib/auth";
+import { getLatestFxRates } from "@/lib/fx";
 import {
   calculateLandedCost,
   formatMoney,
@@ -57,12 +58,18 @@ export default async function LandedCostPage({
   const params = await searchParams;
   const hasQuery = Object.keys(params).length > 0;
 
+  const fxRates = await getLatestFxRates();
+  const usdRate = fxRates.find((rate) => rate.currency === "USD") ?? null;
+
   const hsCode = single(params.hsCode) ?? "";
   const fob = toNumber(single(params.fob));
   const freight = toNumber(single(params.freight));
   const insurance = toNumber(single(params.insurance));
   const currency = (single(params.currency) ?? "NGN").toUpperCase();
-  const exchangeRate = toNumber(single(params.exchangeRate), 1);
+  const suppliedExchangeRate = single(params.exchangeRate);
+  const exchangeRateDefault =
+    suppliedExchangeRate ?? (usdRate ? String(usdRate.rateNgn) : "1");
+  const exchangeRate = toNumber(exchangeRateDefault, 1);
 
   let breakdown: LandedCostBreakdown | null = null;
   let dutyRate = 0;
@@ -209,10 +216,19 @@ export default async function LandedCostPage({
                 type="number"
                 min="0"
                 step="any"
-                defaultValue={single(params.exchangeRate) ?? "1"}
+                defaultValue={exchangeRateDefault}
                 placeholder="1"
                 className={`${inputClass} font-mono`}
               />
+              {!suppliedExchangeRate && usdRate ? (
+                <p className="mt-1 font-mono text-xs text-muted">
+                  Latest NCS rate: USD 1 = NGN{" "}
+                  {usdRate.rateNgn.toLocaleString("en-NG", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </p>
+              ) : null}
             </div>
           </div>
 
