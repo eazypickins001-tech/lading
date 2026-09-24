@@ -1,4 +1,5 @@
-import { LadingLogo } from "@/components/lading-logo";
+import { MarketingFooter } from "@/components/marketing-footer";
+import { MarketingHeader } from "@/components/marketing-header";
 
 const modules = [
   {
@@ -30,25 +31,7 @@ const modules = [
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-hairline bg-deep-harbor text-white">
-        <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-          <LadingLogo variant="onDark" />
-          <div className="hidden items-center gap-8 text-sm text-white/70 md:flex">
-            <a href="#modules" className="hover:text-white">Platform</a>
-            <a href="#trade" className="hover:text-white">Import &amp; Export</a>
-            <a href="#data" className="hover:text-white">Data</a>
-          </div>
-          <div className="flex items-center gap-3 text-sm">
-            <a href="/login" className="text-white/80 hover:text-white">Sign in</a>
-            <a
-              href="/signup"
-              className="rounded-md bg-signal-teal px-4 py-2 font-medium text-white hover:bg-signal-teal/90"
-            >
-              Get started
-            </a>
-          </div>
-        </nav>
-      </header>
+      <MarketingHeader />
 
       <main className="flex flex-1 flex-col">
         <section className="bg-deep-harbor text-white">
@@ -216,12 +199,7 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-hairline bg-white">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-4 px-6 py-8 text-sm text-muted md:flex-row md:items-center">
-          <LadingLogo variant="onLight" />
-          <span>Trade documentation &amp; compliance for African markets.</span>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }
