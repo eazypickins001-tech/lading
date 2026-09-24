@@ -8,10 +8,10 @@ Primary market: Nigeria (import and export), expanding to Rwanda, East Africa, a
 
 ## Stack
 
-- **Next.js 16** (App Router) + React 19 + TypeScript + Tailwind CSS v4 — deployed on **Vercel**
-- **Supabase** — Postgres, Auth, Storage, Edge Functions, `pg_cron`
-- **Paystack** (NGN) + Flutterwave + Stripe — billing
-- **OpenRouter** — AI document extraction and validation
+- **Next.js 16** (App Router) + React 19 + TypeScript + Tailwind CSS v4 - deployed on **Vercel**
+- **Supabase** - Postgres, Auth, Storage, Edge Functions, `pg_cron`
+- **Paystack** (NGN) + Flutterwave + Stripe - billing
+- **OpenRouter** - AI document extraction and validation
 
 ## Repository layout
 
@@ -75,20 +75,20 @@ Row Level Security is enabled on all tables. Organization data is isolated by me
 
 ## Data sourcing
 
-Lading tracks regulatory data from official single sources of truth (NCS CET, NTIP, WTO TTD, US Consolidated Screening List, NCS/CBN FX, NAFDAC, SON, NEPC, NACCIMA). Changes are detected by content hash, staged for human review, and only promoted to live tables after approval — never auto-published.
+Lading tracks regulatory data from official single sources of truth (NCS CET, NTIP, WTO TTD, US Consolidated Screening List, NCS/CBN FX, NAFDAC, SON, NEPC, NACCIMA). Changes are detected by content hash, staged for human review, and only promoted to live tables after approval - never auto-published.
 
 See `docs/architecture.md` for the full design.
 
 ## Roadmap (build order)
 
-- **M0** — Schema, auth, organizations/roles
-- **M1** — Shipment record → document generation
-- **M2** — Billing and freemium gates
-- **M3** — Landed cost / duty calculator
-- **M4** — Requirement engine (Nigeria)
-- **M5** — Cross-document consistency validator
-- **M6** — Incoterms decision-support
-- **M7** — Marketing/SEO site and notifications
+- **M0** - Schema, auth, organizations/roles
+- **M1** - Shipment record → document generation
+- **M2** - Billing and freemium gates
+- **M3** - Landed cost / duty calculator
+- **M4** - Requirement engine (Nigeria)
+- **M5** - Cross-document consistency validator
+- **M6** - Incoterms decision-support
+- **M7** - Marketing/SEO site and notifications
 
 ## Scripts
 

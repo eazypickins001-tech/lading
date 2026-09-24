@@ -1,4 +1,4 @@
-# Lading — Architecture
+# Lading - Architecture
 
 ## Overview
 
@@ -31,9 +31,9 @@ Lading is a multi-tenant SaaS. A Next.js app on Vercel serves both the marketing
 
 Row Level Security enforces isolation:
 
-- `is_org_member(org_id)` — read access.
-- `has_org_role(org_id, roles[])` — write access.
-- `can_access_shipment(shipment_id)` — membership **or** granted agent access.
+- `is_org_member(org_id)` - read access.
+- `has_org_role(org_id, roles[])` - write access.
+- `can_access_shipment(shipment_id)` - membership **or** granted agent access.
 
 ## Domain model
 
@@ -62,8 +62,8 @@ Every rule carries `source_url` and `effective_from` so results are auditable.
 
 Two layers:
 
-1. **Deterministic** — exact cross-checks (invoice totals vs packing list, HS codes align, weights and quantities reconcile, letter-of-credit terms vs documents).
-2. **AI-assisted** — extraction from uploaded PDFs and semantic checks via OpenRouter.
+1. **Deterministic** - exact cross-checks (invoice totals vs packing list, HS codes align, weights and quantities reconcile, letter-of-credit terms vs documents).
+2. **AI-assisted** - extraction from uploaded PDFs and semantic checks via OpenRouter.
 
 Findings are stored with a severity (`info`, `warning`, `error`, `critical`) and the documents involved.
 
@@ -74,13 +74,13 @@ Findings are stored with a severity (`info`, `warning`, `error`, `critical`) and
 
 ## Data-sync architecture
 
-Regulatory change is detected, staged, reviewed, and promoted — never auto-published.
+Regulatory change is detected, staged, reviewed, and promoted - never auto-published.
 
 ### Tables
 
-- `data_sources` — registry of sources with URL, access method, cadence, parser key, content hash, status.
-- `source_snapshots` — each fetch with its content hash and diff summary.
-- `staged_changes` — proposed changes awaiting review (entity, old value, new value, status).
+- `data_sources` - registry of sources with URL, access method, cadence, parser key, content hash, status.
+- `source_snapshots` - each fetch with its content hash and diff summary.
+- `staged_changes` - proposed changes awaiting review (entity, old value, new value, status).
 - Live reference tables (`tariffs`, `hs_codes`, `requirement_rules`, `incoterms`, `document_templates`) update only after approval.
 
 ### Flow
@@ -91,7 +91,7 @@ Regulatory change is detected, staged, reviewed, and promoted — never auto-pub
 4. If changed, the diff is parsed and written to `staged_changes` as `pending`.
 5. An admin reviews the change in the back-office.
 6. On approval, the change is promoted to live tables with provenance (`source_url`, `effective_from`, `retrieved_at`).
-7. If a fetch fails or the format changes, the source is marked `degraded` and an alert is raised — stale data is never served silently.
+7. If a fetch fails or the format changes, the source is marked `degraded` and an alert is raised - stale data is never served silently.
 
 ### Cadences
 

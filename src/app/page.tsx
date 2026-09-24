@@ -1,7 +1,7 @@
 const modules = [
   {
     title: "Shipment record",
-    body: "Capture a shipment once — parties, goods, HS codes, weights, values — and reuse it everywhere.",
+    body: "Capture a shipment once - parties, goods, HS codes, weights, values - and reuse it everywhere.",
   },
   {
     title: "Document generation",
@@ -63,7 +63,7 @@ export default function Home() {
               <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
                 Your forwarder&apos;s paperwork is only as good as the data you
                 hand over. Lading makes it error-free before it leaves your
-                desk — generating compliant import and export documents and
+                desk - generating compliant import and export documents and
                 catching the mistakes that cause demurrage.
               </p>
               <div className="mt-8 flex flex-wrap gap-4">
@@ -139,7 +139,7 @@ export default function Home() {
               <p className="mt-4 leading-relaxed text-muted">
                 Lading is direction-aware. The same shipment record produces
                 the right document set whether you are importing into Nigeria
-                or exporting out of it — Form M and PAAR on the way in, NEPC
+                or exporting out of it - Form M and PAAR on the way in, NEPC
                 and NACCIMA certificates on the way out.
               </p>
             </div>
@@ -170,7 +170,7 @@ export default function Home() {
           </h2>
           <p className="mt-4 max-w-2xl leading-relaxed text-muted">
             Tariffs, permits, sanctions, and customs FX rates are tracked from
-            single sources of truth and updated on a schedule — so your
+            single sources of truth and updated on a schedule - so your
             documents reflect today&apos;s rules, not last year&apos;s.
           </p>
           <div className="mt-8 flex flex-wrap gap-3 font-mono text-xs text-muted">

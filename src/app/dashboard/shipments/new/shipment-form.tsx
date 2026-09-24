@@ -166,7 +166,7 @@ export function ShipmentForm({ incoterms }: { incoterms: Incoterm[] }) {
               <option value="">Not set</option>
               {incoterms.map((incoterm) => (
                 <option key={incoterm.code} value={incoterm.code}>
-                  {incoterm.code} — {incoterm.name}
+                  {incoterm.code} - {incoterm.name}
                 </option>
               ))}
             </select>

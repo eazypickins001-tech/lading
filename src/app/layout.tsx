@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Lading — Every document, right the first time.",
+    default: "Lading - Every document, right the first time.",
     template: "%s · Lading",
   },
   description:

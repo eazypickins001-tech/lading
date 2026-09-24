@@ -47,7 +47,7 @@ export default async function ShipmentDetailPage({
       value:
         [shipment.incoterm, shipment.incotermName]
           .filter(Boolean)
-          .join(" — ") || "Not set",
+          .join(" - ") || "Not set",
     },
     { label: "Incoterm place", value: shipment.incoterm_place ?? "Not set" },
     { label: "Currency", value: shipment.currency },
@@ -135,7 +135,7 @@ export default async function ShipmentDetailPage({
                   >
                     <td className="px-6 py-4 text-ink">{item.description}</td>
                     <td className="px-6 py-4 font-mono text-xs text-ink">
-                      {item.hs_code ?? "—"}
+                      {item.hs_code ?? "-"}
                     </td>
                     <td className="px-6 py-4 text-right font-mono text-ink">
                       {formatNumber(item.quantity, 3)}
@@ -149,11 +149,11 @@ export default async function ShipmentDetailPage({
                     </td>
                     <td className="px-6 py-4 text-right font-mono text-xs text-muted">
                       {item.net_weight_kg === null
-                        ? "—"
+                        ? "-"
                         : formatNumber(item.net_weight_kg, 3)}{" "}
                       /{" "}
                       {item.gross_weight_kg === null
-                        ? "—"
+                        ? "-"
                         : formatNumber(item.gross_weight_kg, 3)}
                     </td>
                   </tr>
