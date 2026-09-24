@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LadingLogo } from "@/components/lading-logo";
 import { LoginForm } from "./login-form";
 
 export default function LoginPage() {
@@ -6,11 +7,8 @@ export default function LoginPage() {
     <div className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link
-            href="/"
-            className="text-lg font-semibold tracking-[0.2em] text-deep-harbor"
-          >
-            LADING
+          <Link href="/" aria-label="Lading home" className="inline-flex">
+            <LadingLogo variant="onLight" />
           </Link>
           <h1 className="mt-6 text-2xl font-semibold tracking-tight">
             Welcome back
