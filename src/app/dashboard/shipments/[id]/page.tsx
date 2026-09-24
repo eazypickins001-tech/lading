@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChannelBadge, StatusBadge } from "@/components/shipment-badges";
+import { ConsistencyFindings } from "@/components/consistency-findings";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { RequiredDocumentsList } from "@/components/required-documents";
 import { getCurrentUser } from "@/lib/auth";
+import { listFindings } from "@/lib/consistency-store";
 import { formatMoney, formatNumber, titleCase } from "@/lib/documents/pdf";
 import { getShipmentRequirements } from "@/lib/requirements";
 import { getShipmentWithItems } from "@/lib/shipments";
@@ -32,6 +34,7 @@ export default async function ShipmentDetailPage({
   }
 
   const requiredDocuments = await getShipmentRequirements(shipment);
+  const findings = await listFindings(id);
 
   const total = shipment.items.reduce(
     (sum, item) => sum + item.quantity * item.unit_value,
@@ -105,6 +108,8 @@ export default async function ShipmentDetailPage({
             ))}
           </dl>
         </section>
+
+        <ConsistencyFindings shipmentId={shipment.id} findings={findings} />
 
         <section className="mt-8 overflow-hidden rounded-xl border border-hairline bg-white">
           <div className="flex items-center justify-between border-b border-hairline px-6 py-4">

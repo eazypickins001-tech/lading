@@ -1,9 +1,12 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
+import { runConsistencyChecks } from "@/lib/consistency";
+import { replaceFindings, setFindingResolved } from "@/lib/consistency-store";
 import type { TradeChannel, TransportMode } from "@/lib/documents/types";
-import { createShipment, type CreateShipmentItemInput } from "@/lib/shipments";
+import { createShipment, getShipmentWithItems, type CreateShipmentItemInput } from "@/lib/shipments";
 
 const CHANNELS: TradeChannel[] = ["import", "export"];
 const MODES: TransportMode[] = [
@@ -135,4 +138,38 @@ export async function createShipmentAction(
   });
 
   redirect(`/dashboard/shipments/${shipmentId}`);
+}
+
+export async function runChecksAction(formData: FormData): Promise<void> {
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  if (!shipmentId) {
+    return;
+  }
+
+  const shipment = await getShipmentWithItems(shipmentId);
+  if (!shipment) {
+    return;
+  }
+
+  const findings = runConsistencyChecks(shipment);
+  await replaceFindings(shipmentId, findings);
+
+  revalidatePath(`/dashboard/shipments/${shipmentId}`);
+  revalidatePath("/dashboard");
+}
+
+export async function resolveFindingAction(formData: FormData): Promise<void> {
+  const findingId = String(formData.get("findingId") ?? "").trim();
+  const resolved = String(formData.get("resolved") ?? "") === "true";
+  if (!findingId) {
+    return;
+  }
+
+  await setFindingResolved(findingId, resolved);
+
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  if (shipmentId) {
+    revalidatePath(`/dashboard/shipments/${shipmentId}`);
+  }
+  revalidatePath("/dashboard");
 }
