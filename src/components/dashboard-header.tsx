@@ -4,7 +4,7 @@ import { signOut } from "@/app/(auth)/actions";
 export function DashboardHeader({
   active,
 }: {
-  active: "dashboard" | "shipments";
+  active: "dashboard" | "shipments" | "requirements";
 }) {
   const linkClass = (isActive: boolean) =>
     isActive ? "text-white" : "text-white/70 hover:text-white";
@@ -31,6 +31,12 @@ export function DashboardHeader({
               className={linkClass(active === "shipments")}
             >
               Shipments
+            </Link>
+            <Link
+              href="/dashboard/requirements"
+              className={linkClass(active === "requirements")}
+            >
+              Requirements
             </Link>
           </nav>
         </div>

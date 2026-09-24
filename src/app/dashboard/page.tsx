@@ -78,6 +78,12 @@ export default async function DashboardPage() {
           >
             New shipment
           </Link>
+          <Link
+            href="/dashboard/requirements"
+            className="rounded-md border border-hairline px-5 py-2.5 text-sm font-medium text-ink hover:bg-white"
+          >
+            Requirements checker
+          </Link>
         </div>
       </main>
     </div>

@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChannelBadge, StatusBadge } from "@/components/shipment-badges";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { RequiredDocumentsList } from "@/components/required-documents";
 import { getCurrentUser } from "@/lib/auth";
 import { formatMoney, formatNumber, titleCase } from "@/lib/documents/pdf";
+import { getShipmentRequirements } from "@/lib/requirements";
 import { getShipmentWithItems } from "@/lib/shipments";
 
 const documents = [
@@ -28,6 +30,8 @@ export default async function ShipmentDetailPage({
   if (!shipment) {
     notFound();
   }
+
+  const requiredDocuments = await getShipmentRequirements(shipment);
 
   const total = shipment.items.reduce(
     (sum, item) => sum + item.quantity * item.unit_value,
@@ -179,6 +183,19 @@ export default async function ShipmentDetailPage({
                 </tr>
               </tfoot>
             </table>
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-xl border border-hairline bg-white p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+            Documents required
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Based on the {shipment.channel} corridor {shipment.origin_country} to{" "}
+            {shipment.destination_country} and the HS codes on this shipment.
+          </p>
+          <div className="mt-5">
+            <RequiredDocumentsList documents={requiredDocuments} />
           </div>
         </section>
 
