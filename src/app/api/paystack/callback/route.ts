@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
-import { activateSubscription, isPaidPlan } from "@/lib/billing";
+import { activateSubscription, isPaidPlan, planFor } from "@/lib/billing";
 import { verifyTransaction } from "@/lib/paystack";
 
 export const runtime = "nodejs";
@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
   const reference =
     request.nextUrl.searchParams.get("reference") ??
     request.nextUrl.searchParams.get("trxref");
-  const plan = request.nextUrl.searchParams.get("plan");
 
   let activated = false;
 
@@ -18,14 +17,15 @@ export async function GET(request: NextRequest) {
       const verified = await verifyTransaction(reference);
       const metadata = verified.metadata ?? {};
       const resolvedPlan =
-        typeof metadata.plan === "string" ? metadata.plan : plan;
+        typeof metadata.plan === "string" ? metadata.plan : null;
       const orgId = typeof metadata.orgId === "string" ? metadata.orgId : null;
 
       if (
         verified.success &&
         orgId &&
         resolvedPlan &&
-        isPaidPlan(resolvedPlan)
+        isPaidPlan(resolvedPlan) &&
+        verified.amountNgn >= planFor(resolvedPlan).priceNgn
       ) {
         await activateSubscription(orgId, resolvedPlan, reference);
         activated = true;

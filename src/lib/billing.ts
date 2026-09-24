@@ -234,11 +234,18 @@ export async function activateSubscription(
 
   const { data: existing } = await admin
     .from("subscriptions")
-    .select("id")
+    .select("id, provider_ref")
     .eq("org_id", orgId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  if (
+    existing &&
+    (existing as { provider_ref: string | null }).provider_ref === reference
+  ) {
+    return;
+  }
 
   if (existing) {
     const { error } = await admin

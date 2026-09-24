@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { allowRequest, clientIp } from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthState =
@@ -25,6 +26,11 @@ export async function signUp(
 
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
+  }
+
+  const ip = await clientIp();
+  if (!(await allowRequest(`signup:${ip}`, 5, 3600))) {
+    return { error: "Too many sign-up attempts. Please try again later." };
   }
 
   const supabase = await createClient();
@@ -84,6 +90,13 @@ export async function signIn(
     return { error: "Email and password are required." };
   }
 
+  const ip = await clientIp();
+  if (!(await allowRequest(`login:${ip}`, 10, 300))) {
+    return {
+      error: "Too many attempts. Please wait a few minutes and try again.",
+    };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
@@ -108,6 +121,14 @@ export async function requestPasswordReset(
 
   if (!email) {
     return { error: "Enter the email address for your account." };
+  }
+
+  const ip = await clientIp();
+  if (!(await allowRequest(`reset:${ip}`, 5, 3600))) {
+    return {
+      success:
+        "If an account exists for that email, a reset link is on its way.",
+    };
   }
 
   const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`;

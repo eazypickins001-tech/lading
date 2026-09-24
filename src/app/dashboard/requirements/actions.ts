@@ -2,6 +2,7 @@
 
 import { getCurrentUser } from "@/lib/auth";
 import { suggestHsCodes, type HsSuggestion } from "@/lib/hs-suggest";
+import { allowRequest } from "@/lib/rate-limit";
 
 export type HsSuggestState =
   | {
@@ -18,6 +19,14 @@ export async function suggestHsAction(
   const user = await getCurrentUser();
   if (!user) {
     return { status: "error", message: "Please sign in to use the assistant." };
+  }
+
+  const allowed = await allowRequest(`ai:${user.id}`, 30, 3600);
+  if (!allowed) {
+    return {
+      status: "error",
+      message: "Too many requests. Please try again later.",
+    };
   }
 
   const description = String(formData.get("description") ?? "").trim();

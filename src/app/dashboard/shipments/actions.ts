@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { recordAuditEvent } from "@/lib/audit";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
 import { getEntitlement, incrementUsage } from "@/lib/billing";
 import { runConsistencyChecks } from "@/lib/consistency";
 import { replaceFindings, setFindingResolved } from "@/lib/consistency-store";
 import type { TradeChannel, TransportMode } from "@/lib/documents/types";
 import { suggestHsCodes, type HsSuggestion } from "@/lib/hs-suggest";
+import { allowRequest } from "@/lib/rate-limit";
 import { createShipment, getShipmentWithItems, type CreateShipmentItemInput } from "@/lib/shipments";
 import { createClient } from "@/lib/supabase/server";
 import { getEffectivePlan } from "@/lib/subscriptions";
@@ -39,6 +41,11 @@ export async function suggestHsForLineAction(
   const user = await getCurrentUser();
   if (!user) {
     return { status: "error", message: "Please sign in to use the assistant." };
+  }
+
+  const allowed = await allowRequest(`ai:${user.id}`, 30, 3600);
+  if (!allowed) {
+    return { status: "error", message: "Too many requests. Please try again later." };
   }
 
   const description = String(formData.get("description") ?? "").trim();
@@ -198,6 +205,15 @@ export async function createShipmentAction(
 
   await incrementUsage(organization.id, "shipment");
 
+  await recordAuditEvent({
+    orgId: organization.id,
+    userId: user.id,
+    action: "shipment.create",
+    entityType: "shipment",
+    entityId: shipmentId,
+    metadata: { channel, reference },
+  });
+
   redirect(`/dashboard/shipments/${shipmentId}`);
 }
 
@@ -322,6 +338,16 @@ export async function updateShipmentAction(
 
   revalidatePath("/dashboard/shipments/[id]", "page");
   revalidatePath("/dashboard/shipments");
+
+  await recordAuditEvent({
+    orgId: organization.id,
+    userId: user.id,
+    action: "shipment.update",
+    entityType: "shipment",
+    entityId: shipmentId,
+    metadata: { channel, reference },
+  });
+
   redirect(`/dashboard/shipments/${shipmentId}`);
 }
 

@@ -2,7 +2,10 @@ import { generateCommercialInvoice } from "@/lib/documents/invoice";
 import { generatePackingList } from "@/lib/documents/packing-list";
 import { generateProformaInvoice } from "@/lib/documents/proforma";
 import type { DocType, ShipmentDocumentPayload } from "@/lib/documents/types";
+import { recordAuditEvent } from "@/lib/audit";
+import { getCurrentUser } from "@/lib/auth";
 import { getEntitlement, getOrgPlan, incrementUsage } from "@/lib/billing";
+import { allowRequest } from "@/lib/rate-limit";
 import {
   getShipmentWithItems,
   recordDocumentGenerated,
@@ -30,10 +33,29 @@ const generators: Record<string, { docType: DocType; generate: Generator }> = {
 };
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string; type: string }> },
 ) {
+  const secFetchSite = request.headers.get("sec-fetch-site");
+  if (
+    secFetchSite &&
+    secFetchSite !== "same-origin" &&
+    secFetchSite !== "none"
+  ) {
+    return new Response("Forbidden.", { status: 403 });
+  }
+
   const { id, type } = await params;
+
+  const user = await getCurrentUser();
+  if (!user) {
+    return new Response("Unauthorized.", { status: 401 });
+  }
+
+  const allowed = await allowRequest(`doc:${user.id}`, 120, 3600);
+  if (!allowed) {
+    return new Response("Too many requests.", { status: 429 });
+  }
 
   const shipment = await getShipmentWithItems(id);
   if (!shipment) {
@@ -67,7 +89,18 @@ export async function GET(
 
   await incrementUsage(shipment.org_id, "document");
 
-  const reference = shipment.reference ?? shipment.id.slice(0, 8);
+  await recordAuditEvent({
+    orgId: shipment.org_id,
+    userId: user.id,
+    action: "document.download",
+    entityType: "shipment",
+    entityId: id,
+    metadata: { type },
+  });
+
+  const reference = (shipment.reference ?? shipment.id.slice(0, 8))
+    .replace(/[^A-Za-z0-9._-]/g, "_")
+    .slice(0, 60);
 
   return new Response(new Uint8Array(bytes), {
     headers: {
