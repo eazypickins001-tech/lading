@@ -82,6 +82,12 @@ export default async function ShipmentDetailPage({
               <ChannelBadge channel={shipment.channel} />
             </div>
             <p className="mt-2 text-muted">{shipment.organization.name}</p>
+            <Link
+              href={`/dashboard/shipments/${shipment.id}/edit`}
+              className="mt-3 inline-flex rounded-md border border-hairline px-4 py-2 text-sm font-medium text-ink hover:border-signal-teal hover:text-signal-teal"
+            >
+              Edit shipment
+            </Link>
           </div>
           <div className="text-right">
             <p className="font-mono text-xs uppercase tracking-widest text-muted">

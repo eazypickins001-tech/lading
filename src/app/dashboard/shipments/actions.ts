@@ -9,6 +9,7 @@ import { replaceFindings, setFindingResolved } from "@/lib/consistency-store";
 import type { TradeChannel, TransportMode } from "@/lib/documents/types";
 import { suggestHsCodes, type HsSuggestion } from "@/lib/hs-suggest";
 import { createShipment, getShipmentWithItems, type CreateShipmentItemInput } from "@/lib/shipments";
+import { createClient } from "@/lib/supabase/server";
 import { getEffectivePlan } from "@/lib/subscriptions";
 
 const CHANNELS: TradeChannel[] = ["import", "export"];
@@ -77,48 +78,10 @@ function parseNumber(value: FormDataEntryValue | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export async function createShipmentAction(
-  state: CreateShipmentState,
+function parseItems(
   formData: FormData,
-): Promise<CreateShipmentState> {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
-  const organization = await getActiveOrg();
-  if (!organization) {
-    redirect("/onboarding");
-  }
-
-  const plan = await getEffectivePlan(organization.id, organization.plan);
-  const entitlement = await getEntitlement(organization.id, plan);
-  if (!entitlement.canCreateShipment) {
-    redirect("/dashboard/billing?limit=shipments");
-  }
-
-  const reference = String(formData.get("reference") ?? "").trim() || null;
-  const channelValue = String(formData.get("channel") ?? "import");
-  const originCountry = String(formData.get("originCountry") ?? "").trim();
-  const destinationCountry = String(
-    formData.get("destinationCountry") ?? "",
-  ).trim();
-  const modeValue = String(formData.get("mode") ?? "sea");
-  const incoterm = String(formData.get("incoterm") ?? "").trim() || null;
-  const incotermPlace =
-    String(formData.get("incotermPlace") ?? "").trim() || null;
-  const currency =
-    String(formData.get("currency") ?? "NGN")
-      .trim()
-      .toUpperCase() || "NGN";
-
-  const fieldErrors: Record<string, string> = {};
-  if (!originCountry) {
-    fieldErrors.originCountry = "Origin country is required.";
-  }
-  if (!destinationCountry) {
-    fieldErrors.destinationCountry = "Destination country is required.";
-  }
-
+  fieldErrors: Record<string, string>,
+): CreateShipmentItemInput[] {
   const descriptions = formData
     .getAll("itemDescription")
     .map((value) => String(value));
@@ -163,6 +126,53 @@ export async function createShipmentAction(
       fieldErrors.items ?? "Add at least one line item to the shipment.";
   }
 
+  return items;
+}
+
+export async function createShipmentAction(
+  state: CreateShipmentState,
+  formData: FormData,
+): Promise<CreateShipmentState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  const organization = await getActiveOrg();
+  if (!organization) {
+    redirect("/onboarding");
+  }
+
+  const plan = await getEffectivePlan(organization.id, organization.plan);
+  const entitlement = await getEntitlement(organization.id, plan);
+  if (!entitlement.canCreateShipment) {
+    redirect("/dashboard/billing?limit=shipments");
+  }
+
+  const reference = String(formData.get("reference") ?? "").trim() || null;
+  const channelValue = String(formData.get("channel") ?? "import");
+  const originCountry = String(formData.get("originCountry") ?? "").trim();
+  const destinationCountry = String(
+    formData.get("destinationCountry") ?? "",
+  ).trim();
+  const modeValue = String(formData.get("mode") ?? "sea");
+  const incoterm = String(formData.get("incoterm") ?? "").trim() || null;
+  const incotermPlace =
+    String(formData.get("incotermPlace") ?? "").trim() || null;
+  const currency =
+    String(formData.get("currency") ?? "NGN")
+      .trim()
+      .toUpperCase() || "NGN";
+
+  const fieldErrors: Record<string, string> = {};
+  if (!originCountry) {
+    fieldErrors.originCountry = "Origin country is required.";
+  }
+  if (!destinationCountry) {
+    fieldErrors.destinationCountry = "Destination country is required.";
+  }
+
+  const items = parseItems(formData, fieldErrors);
+
   if (Object.keys(fieldErrors).length > 0) {
     return { error: "Please correct the highlighted fields.", fieldErrors };
   }
@@ -188,6 +198,130 @@ export async function createShipmentAction(
 
   await incrementUsage(organization.id, "shipment");
 
+  redirect(`/dashboard/shipments/${shipmentId}`);
+}
+
+export async function updateShipmentAction(
+  state: CreateShipmentState,
+  formData: FormData,
+): Promise<CreateShipmentState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  const organization = await getActiveOrg();
+  if (!organization) {
+    redirect("/onboarding");
+  }
+
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  if (!shipmentId) {
+    return { error: "The shipment could not be found." };
+  }
+
+  const reference = String(formData.get("reference") ?? "").trim() || null;
+  const channelValue = String(formData.get("channel") ?? "import");
+  const originCountry = String(formData.get("originCountry") ?? "").trim();
+  const destinationCountry = String(
+    formData.get("destinationCountry") ?? "",
+  ).trim();
+  const modeValue = String(formData.get("mode") ?? "sea");
+  const incoterm = String(formData.get("incoterm") ?? "").trim() || null;
+  const incotermPlace =
+    String(formData.get("incotermPlace") ?? "").trim() || null;
+  const currency =
+    String(formData.get("currency") ?? "NGN")
+      .trim()
+      .toUpperCase() || "NGN";
+
+  const fieldErrors: Record<string, string> = {};
+  if (!originCountry) {
+    fieldErrors.originCountry = "Origin country is required.";
+  }
+  if (!destinationCountry) {
+    fieldErrors.destinationCountry = "Destination country is required.";
+  }
+
+  const items = parseItems(formData, fieldErrors);
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return { error: "Please correct the highlighted fields.", fieldErrors };
+  }
+
+  const channel = CHANNELS.includes(channelValue as TradeChannel)
+    ? (channelValue as TradeChannel)
+    : "import";
+  const mode = MODES.includes(modeValue as TransportMode)
+    ? (modeValue as TransportMode)
+    : "sea";
+
+  const supabase = await createClient();
+  const update: {
+    channel: TradeChannel;
+    origin_country: string;
+    destination_country: string;
+    mode: TransportMode;
+    incoterm: string | null;
+    incoterm_place: string | null;
+    currency: string;
+    reference?: string;
+  } = {
+    channel,
+    origin_country: originCountry,
+    destination_country: destinationCountry,
+    mode,
+    incoterm,
+    incoterm_place: incotermPlace,
+    currency,
+  };
+
+  if (reference) {
+    update.reference = reference;
+  }
+
+  const { data: updated, error } = await supabase
+    .from("shipments")
+    .update(update)
+    .eq("id", shipmentId)
+    .eq("org_id", organization.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !updated) {
+    return { error: "We could not update this shipment. Please try again." };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("shipment_items")
+    .delete()
+    .eq("shipment_id", shipmentId);
+
+  if (deleteError) {
+    return { error: "We could not update the shipment line items." };
+  }
+
+  if (items.length > 0) {
+    const { error: itemsError } = await supabase.from("shipment_items").insert(
+      items.map((item) => ({
+        shipment_id: shipmentId,
+        description: item.description,
+        hs_code: item.hsCode,
+        quantity: item.quantity,
+        unit: item.unit,
+        unit_value: item.unitValue,
+        currency,
+        net_weight_kg: item.netWeightKg,
+        gross_weight_kg: item.grossWeightKg,
+      })),
+    );
+
+    if (itemsError) {
+      return { error: "We could not save the shipment line items." };
+    }
+  }
+
+  revalidatePath("/dashboard/shipments/[id]", "page");
+  revalidatePath("/dashboard/shipments");
   redirect(`/dashboard/shipments/${shipmentId}`);
 }
 
