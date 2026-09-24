@@ -95,15 +95,15 @@ export default async function DashboardPage() {
 
         {isAdminEmail(user.email) ? (
           <Link
-            href="/dashboard/data"
+            href="/admin"
             className="mt-6 flex items-center justify-between rounded-xl border border-hairline bg-white p-6 transition-colors hover:border-signal-teal"
           >
             <div>
               <p className="text-sm font-semibold text-deep-harbor">
-                Data sources
+                Admin panel
               </p>
               <p className="mt-1 text-sm text-muted">
-                Monitor syncs and review staged changes.
+                Manage users, organizations, subscriptions, and data sources.
               </p>
             </div>
             <span className="font-mono text-xs uppercase tracking-widest text-signal-teal">
