@@ -18,6 +18,9 @@ export function MarketingHeader() {
           <Link href="/#data" className="hover:text-white">
             Data
           </Link>
+          <Link href="/blog" className="hover:text-white">
+            Blog
+          </Link>
           <Link href="/resources" className="hover:text-white">
             Resources
           </Link>

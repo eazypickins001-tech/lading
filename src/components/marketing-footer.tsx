@@ -10,6 +10,9 @@ export function MarketingFooter() {
           <LadingLogo variant="onLight" />
           <span>Trade documentation &amp; compliance for African markets.</span>
           <div className="flex flex-wrap gap-6">
+            <Link href="/blog" className="hover:text-ink">
+              Blog
+            </Link>
             <Link href="/resources" className="hover:text-ink">
               Resources
             </Link>
