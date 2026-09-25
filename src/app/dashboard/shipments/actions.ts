@@ -35,6 +35,7 @@ import {
 } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 import { getEffectivePlan } from "@/lib/subscriptions";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 const ACCESS_MANAGER_ROLES = ["owner", "admin", "trader"];
 
@@ -306,6 +307,25 @@ export async function createShipmentAction(
     link: `/dashboard/shipments/${shipmentId}`,
   });
 
+  const supabase = await createClient();
+  const { data: createdRow } = await supabase
+    .from("shipments")
+    .select("reference")
+    .eq("id", shipmentId)
+    .maybeSingle();
+  const createdReference =
+    (createdRow as { reference: string | null } | null)?.reference ?? reference;
+
+  await dispatchWebhook(organization.id, "shipment.created", {
+    id: shipmentId,
+    reference: createdReference,
+    channel,
+    originCountry,
+    destinationCountry,
+    mode,
+    itemCount: items.length,
+  });
+
   redirect(`/dashboard/shipments/${shipmentId}`);
 }
 
@@ -380,6 +400,13 @@ export async function updateShipmentStatusAction(
     title: "Shipment status updated",
     body: `${label} moved from ${statusLabel(row.status)} to ${statusLabel(to)}.`,
     link: `/dashboard/shipments/${shipmentId}`,
+  });
+
+  await dispatchWebhook(organization.id, "status.changed", {
+    id: shipmentId,
+    reference: row.reference,
+    from: row.status,
+    to,
   });
 
   revalidatePath(`/dashboard/shipments/${shipmentId}`);

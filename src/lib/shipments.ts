@@ -288,8 +288,9 @@ export async function getShipmentWithItems(
 export async function generateShipmentReference(
   orgId: string,
   channel: TradeChannel,
+  client?: SupabaseClient,
 ): Promise<string> {
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const year = new Date().getFullYear();
   const prefix = `${channel === "import" ? "IMP" : "EXP"}-${year}-`;
 
@@ -322,25 +323,42 @@ export async function generateShipmentReference(
   return `${prefix}${Date.now().toString().slice(-5)}`;
 }
 
+export type CreateShipmentOptions = {
+  client?: SupabaseClient;
+  orgId?: string;
+  userId?: string | null;
+};
+
 export async function createShipment(
   input: CreateShipmentInput,
+  options?: CreateShipmentOptions,
 ): Promise<string> {
-  const organization = await getActiveOrg();
-  if (!organization) {
-    throw new Error("No active organization.");
+  const supabase = options?.client ?? (await createClient());
+
+  let orgId = options?.orgId;
+  if (!orgId) {
+    const organization = await getActiveOrg();
+    if (!organization) {
+      throw new Error("No active organization.");
+    }
+    orgId = organization.id;
   }
-  const user = await getCurrentUser();
-  const supabase = await createClient();
+
+  let userId = options?.userId;
+  if (userId === undefined) {
+    const user = await getCurrentUser();
+    userId = user?.id ?? null;
+  }
 
   const reference =
     input.reference && input.reference.trim() !== ""
       ? input.reference.trim()
-      : await generateShipmentReference(organization.id, input.channel);
+      : await generateShipmentReference(orgId, input.channel, options?.client);
 
   const { data: shipment, error } = await supabase
     .from("shipments")
     .insert({
-      org_id: organization.id,
+      org_id: orgId,
       reference,
       channel: input.channel,
       origin_country: input.originCountry,
@@ -352,7 +370,7 @@ export async function createShipment(
       exporter_party_id: input.exporterPartyId,
       consignee_party_id: input.consigneePartyId,
       notify_party_id: input.notifyPartyId,
-      created_by: user?.id ?? null,
+      created_by: userId ?? null,
     })
     .select("id")
     .single();

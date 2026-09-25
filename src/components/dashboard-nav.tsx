@@ -16,7 +16,8 @@ export type NavKey =
   | "profile"
   | "settings"
   | "audit"
-  | "billing";
+  | "billing"
+  | "api";
 
 const links: { key: NavKey; href: string; label: string }[] = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard" },
@@ -32,6 +33,7 @@ const links: { key: NavKey; href: string; label: string }[] = [
   { key: "settings", href: "/dashboard/settings", label: "Settings" },
   { key: "audit", href: "/dashboard/audit", label: "Audit" },
   { key: "billing", href: "/dashboard/billing", label: "Billing" },
+  { key: "api", href: "/dashboard/api", label: "API" },
 ];
 
 export function DashboardNav({ active }: { active: NavKey }) {
