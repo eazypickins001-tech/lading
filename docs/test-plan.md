@@ -4,7 +4,7 @@ Manual test plan for the Lading trade documentation platform, written against th
 
 ## 0. Quick smoke test (about 10 minutes)
 
-Run this first after any deploy. If all ten pass, the core platform is healthy.
+Run this first after any deploy. If all eleven pass, the core platform is healthy.
 
 Login: `geraldnoria+tradera@gmail.com` / `Lading!Test2026`
 Base URL: `https://lading-eazypickins.vercel.app`
@@ -21,8 +21,9 @@ Base URL: `https://lading-eazypickins.vercel.app`
 | 8 | On the import shipment, run consistency checks | Findings render | |
 | 9 | Log in as admin (`geraldnoria@gmail.com` / `Ldg!Admin#2026-52772104`), open `/admin` | Admin overview loads | |
 | 10 | Log in as Trader B (`geraldnoria+traderb@gmail.com`), open Trader A's import shipment URL | 404, no data (tenant isolation) | |
+| 11 | Open `/blog`, open a post, play the video | List and post load; the embedded video plays | |
 
-If check 10 fails, stop and treat it as a security incident (see section 19).
+If check 10 fails, stop and treat it as a security incident (see section 20).
 
 ## 1. Environments and access
 
@@ -71,6 +72,9 @@ Direct links (log in as Trader A first):
 | 4.3 | Open a page from a dropdown | The parent stays highlighted; the dropdown closes on outside click |
 | 4.4 | Resize to mobile, open the menu | Grouped sections with headings; menu scrolls if long |
 | 4.5 | Keyboard: Tab to a group, press Enter, arrow to an item, press Enter | Navigates correctly |
+| 4.6 | Desktop marketing header | Includes a Blog link; clicking it opens `/blog` |
+| 4.7 | Resize the marketing header below 1024px and open the hamburger | Lists Platform, Import & Export, Data, Blog, Resources, Pricing |
+| 4.8 | App menu, Account, then Blog | Opens `/blog` |
 
 ## 5. Authentication
 
@@ -207,44 +211,72 @@ Direct links (log in as Trader A first):
 | 15.3 | Change a shipment status | A notification appears |
 | 15.4 | Mark all read | Unread count goes to zero |
 
-## 16. Billing (optional - see note)
+## 16. Blog (public and admin)
+
+Public blog:
+
+| # | Steps | Expected |
+|---|---|---|
+| 16.1 | Open `/blog` | Published posts listed with cover images (or a placeholder) |
+| 16.2 | Open a post | Title, date, tags, cover, video, body and CTA all render |
+| 16.3 | Play the embedded YouTube video | The video plays (not blocked) |
+| 16.4 | Click "Watch on TikTok / Instagram / Facebook / Threads / Bluesky" | Opens the correct platform link in a new tab |
+| 16.5 | A post with no cover but with a YouTube URL | The YouTube thumbnail is used as the cover |
+
+Admin blog (log in as the platform admin):
+
+| # | Steps | Expected |
+|---|---|---|
+| 16.6 | `/admin/blog` | All posts listed with published status and dates |
+| 16.7 | Non-admin visits `/admin/blog` | Redirected to `/dashboard` |
+| 16.8 | New post: title, slug (blank auto-generates), description, tags, body (blank line = new paragraph), YouTube URL, platform URLs | Saved and listed |
+| 16.9 | Leave Published unticked | Draft is NOT visible on `/blog` |
+| 16.10 | Tick Published and save | Appears on `/blog` immediately |
+| 16.11 | Upload a cover image and save | Cover shows on the card and the post page |
+| 16.12 | Paste a cover URL instead of a file and save | That URL is used as the cover |
+| 16.13 | Edit a post, change the title, save | Changes appear on the public post |
+| 16.14 | Delete a post | Removed from admin and from `/blog` |
+
+## 17. Billing (optional - see note)
 
 > Prices are production amounts (Starter NGN 10,000, Professional 35,000, Organization 90,000, Agent 50,000). Only run a real payment if your Vercel Paystack key is a test key.
 
 | # | Steps | Expected |
 |---|---|---|
-| 16.1 | `/dashboard/billing` | Current plan, usage bars, plan grid with NGN prices, renewal note |
-| 16.2 | Choose a paid plan | Redirected to Paystack with the correct amount |
-| 16.3 | Complete a test payment | Back on billing with success, plan updated, "Renews on" date |
-| 16.4 | Cancel subscription | Access continues to period end; status cancelled |
-| 16.5 | Revisit the callback URL with the same reference | Period must NOT extend (replay protection) |
+| 17.1 | `/dashboard/billing` | Current plan, usage bars, plan grid with NGN prices, renewal note |
+| 17.2 | Choose a paid plan | Redirected to Paystack with the correct amount |
+| 17.3 | Complete a test payment | Back on billing with success, plan updated, "Renews on" date |
+| 17.4 | Cancel subscription | Access continues to period end; status cancelled |
+| 17.5 | Revisit the callback URL with the same reference | Period must NOT extend (replay protection) |
 
-## 17. Public API and webhooks
-
-| # | Steps | Expected |
-|---|---|---|
-| 17.1 | `/dashboard/api`, create an API key | Plain key shown once; only the prefix is listed afterwards |
-| 17.2 | `curl -H "Authorization: Bearer <key>" https://lading-eazypickins.vercel.app/api/v1/shipments` | JSON list of the org's shipments |
-| 17.3 | `POST /api/v1/shipments` with a JSON body | Shipment created; returns id and reference |
-| 17.4 | `GET /api/v1/shipments/<id>` for another org's shipment | 404 |
-| 17.5 | `POST /api/v1/requirements` | Returns the required documents |
-| 17.6 | Call with no or a revoked key | 401 |
-| 17.7 | Add a webhook endpoint, then create a shipment | A `shipment.created` delivery is recorded with an `X-Lading-Signature` header |
-| 17.8 | Revoke the API key | Subsequent calls return 401 |
-
-## 18. Admin and data sync
+## 18. Public API and webhooks
 
 | # | Steps | Expected |
 |---|---|---|
-| 18.1 | Dashboard shows an "Admin" card | Links to `/admin` |
-| 18.2 | Non-admin visits `/admin` | Redirected to `/dashboard` |
-| 18.3 | `/admin`, `/admin/users`, `/admin/organizations`, `/admin/subscriptions` | All load with data |
-| 18.4 | `/admin/users`, Edit a user | Profile edit, set password, generate reset link, change plan |
-| 18.5 | `/dashboard/data` | Sources table with status, cadence, last checked, hash |
-| 18.6 | Run the FX API source, approve the change | FX rates written; landed cost hint updates |
-| 18.7 | Confirm the NCS source | Degraded (NCS blocks datacenter IPs) - expected |
+| 18.1 | `/dashboard/api`, create an API key | Plain key shown once; only the prefix is listed afterwards |
+| 18.2 | `curl -H "Authorization: Bearer <key>" https://lading-eazypickins.vercel.app/api/v1/shipments` | JSON list of the org's shipments |
+| 18.3 | `POST /api/v1/shipments` with a JSON body | Shipment created; returns id and reference |
+| 18.4 | `GET /api/v1/shipments/<id>` for another org's shipment | 404 |
+| 18.5 | `POST /api/v1/requirements` | Returns the required documents |
+| 18.6 | Call with no or a revoked key | 401 |
+| 18.7 | Add a webhook endpoint, then create a shipment | A `shipment.created` delivery is recorded with an `X-Lading-Signature` header |
+| 18.8 | Revoke the API key | Subsequent calls return 401 |
 
-## 19. Security tests
+## 19. Admin and data sync
+
+| # | Steps | Expected |
+|---|---|---|
+| 19.1 | Dashboard shows an "Admin" card | Links to `/admin` |
+| 19.2 | Non-admin visits `/admin` | Redirected to `/dashboard` |
+| 19.3 | `/admin`, `/admin/users`, `/admin/organizations`, `/admin/subscriptions` | All load with data |
+| 19.4 | `/admin/users`, Edit a user | Profile edit, set password, generate reset link, change plan |
+| 19.5 | `/admin/blog` | Blog management loads (see section 16) |
+| 19.6 | `/dashboard/data` | Sources table with status, cadence, last checked, hash |
+| 19.7 | Run the FX API source, approve the change | FX rates written; landed cost hint updates |
+| 19.8 | Confirm the NCS source | Degraded (NCS blocks datacenter IPs) - expected |
+| 19.9 | Click "Sync platform admins" | Emails in ADMIN_EMAILS are copied into the platform_admins table |
+
+## 20. Security tests
 
 | # | Steps | Expected |
 |---|---|---|
@@ -258,21 +290,24 @@ Direct links (log in as Trader A first):
 | S8 | As a normal user, call an admin action | Rejected as unauthorized |
 | S9 | Call `/api/v1/shipments` with no key | 401 |
 | S10 | Open a share link after its expiry | Rejected |
-| S11 | Search the client bundle for the service role key | Not present |
+| S11 | As an anonymous visitor, GET `/rest/v1/blog_posts?published=eq.false` | Empty (drafts are admin-only) |
+| S12 | Search the client bundle for the service role key | Not present |
 
-## 20. Regression checklist (before each release)
+## 21. Regression checklist (before each release)
 
 - [ ] `pnpm lint` passes
 - [ ] `pnpm build` passes
 - [ ] No em dashes in `src` (search for the U+2014 character)
 - [ ] No secrets committed (`git grep -E "sk_live_|sk_test_|sb_secret_|github_pat_|vcp_|sbp_"`)
 - [ ] All dashboard pages load
+- [ ] `/blog` loads and an embedded video plays
 - [ ] Vercel deployment is Ready; env vars present for Production and Preview
 - [ ] Paystack webhook URL set; Supabase redirect URLs include `/auth/callback`
 - [ ] Supabase email confirmation matches the SMTP situation
 - [ ] Screening data present (`screening_entries` count greater than 20000)
+- [ ] `platform_admins` matches `ADMIN_EMAILS` (run Sync platform admins)
 
-## 21. Known issues and notes
+## 22. Known issues and notes
 
 - Email confirmation is ON but SMTP is not configured, so self-service signup cannot complete. Use the test accounts, or configure SMTP.
 - NCS and CBN sources return HTTP 403 to datacenter IPs, so those sync sources show as degraded. The FX API source works.
@@ -280,3 +315,7 @@ Direct links (log in as Trader A first):
 - Requirement rules cover imports into Nigeria, exports from Nigeria, and agri exports from Nigeria to the US. Other corridors return the empty state.
 - Screening uses the US Consolidated Screening List only; UN and EU lists are not yet ingested.
 - Free OpenRouter models can be inconsistent; a fallback chain mitigates this.
+- Blog covers fall back to the YouTube thumbnail when no cover image is set.
+- If a specific YouTube video will not embed, the video owner may have disabled embedding; that is a YouTube setting, not an app issue.
+- Adding an admin to ADMIN_EMAILS also requires running "Sync platform admins" on the data console so database and storage access match.
+- Blog content can be managed only by platform admins at `/admin/blog`.
