@@ -66,6 +66,11 @@ export function RequiredDocumentsList({
         <p className="text-sm text-muted">
           No document rules are on file for this corridor yet.
         </p>
+        <p className="mt-2 text-xs text-muted">
+          Lading currently covers imports into Nigeria and exports from Nigeria.
+          Check the origin, destination, and HS code, or use the AI assistant to
+          find the right HS code.
+        </p>
       </div>
     );
   }
