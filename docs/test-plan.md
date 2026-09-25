@@ -4,7 +4,7 @@ Manual test plan for the Lading trade documentation platform, written against th
 
 ## 0. Quick smoke test (about 10 minutes)
 
-Run this first after any deploy. If all ten pass, the core platform is healthy. Details are in the sections below.
+Run this first after any deploy. If all ten pass, the core platform is healthy.
 
 Login: `geraldnoria+tradera@gmail.com` / `Lading!Test2026`
 Base URL: `https://lading-eazypickins.vercel.app`
@@ -14,27 +14,27 @@ Base URL: `https://lading-eazypickins.vercel.app`
 | 1 | Open the landing page and `/pricing` | Both load, pricing shows NGN amounts | |
 | 2 | Log in as Trader A | Redirected to `/dashboard`, org "Trader A Ltd" | |
 | 3 | Open `/dashboard/shipments` | Two shipments listed (IMP-2026-0001, EXP-2026-0001) | |
-| 4 | Open the import shipment (`154e31ad-6fa7-4e72-9948-9a8d4e99680c`) | Loads (not 404); total NGN 23,000,000 | |
-| 5 | On that shipment, open Commercial Invoice | PDF opens with seller/buyer and totals | |
+| 4 | Open the import shipment (`154e31ad-6fa7-4e72-9948-9a8d4e99680c`) | Loads; total NGN 23,000,000 | |
+| 5 | On that shipment, open the Commercial Invoice | PDF opens with seller/buyer and totals | |
 | 6 | Open `/dashboard/requirements`, import into NG, HS 8471.30 | Form M and PAAR required | |
-| 7 | On the import shipment, run consistency checks | Findings render with severities | |
-| 8 | Edit the shipment, change a field, save | Saved, redirected to the detail page | |
-| 9 | Log in as admin (`geraldnoria@gmail.com` / `Ldg!Admin#2026-52772104`), open `/admin` | Admin overview loads with user and org counts | |
+| 7 | Export NG to US, HS 1801.00 | FDA Prior Notice, NEPC and Phytosanitary required | |
+| 8 | On the import shipment, run consistency checks | Findings render | |
+| 9 | Log in as admin (`geraldnoria@gmail.com` / `Ldg!Admin#2026-52772104`), open `/admin` | Admin overview loads | |
 | 10 | Log in as Trader B (`geraldnoria+traderb@gmail.com`), open Trader A's import shipment URL | 404, no data (tenant isolation) | |
 
-If check 10 fails, stop and treat it as a security incident (see section 14).
+If check 10 fails, stop and treat it as a security incident (see section 19).
 
 ## 1. Environments and access
 
 | Item | Value |
 |---|---|
-| Production URL | https://lading-eazypickins.vercel.app (alias: https://lading-three.vercel.app) |
+| Production URL | https://lading-eazypickins.vercel.app (alias https://lading-three.vercel.app) |
 | Local | http://localhost:3000 (`pnpm dev`) |
 | Supabase project | mcervdzebmfzdbrbnesm |
 | Repo | https://github.com/eazypickins001-tech/lading |
 
 Tips:
-- Use two browser profiles (or one normal + one incognito) so you can be logged in as two tenants at once (needed for the isolation tests).
+- Use two browser profiles so you can be logged in as two tenants at once (needed for isolation and sharing tests).
 - Do NOT use "Sign up" with a brand-new email: email confirmation is ON and SMTP is not configured, so the confirmation email will not arrive. Use the accounts below (all pre-confirmed).
 
 ## 2. Test accounts
@@ -53,164 +53,230 @@ Change the admin password after testing.
 | Tenant | What | Reference | Route | Mode / Incoterm | Items |
 |---|---|---|---|---|---|
 | Trader A | Import shipment | `IMP-2026-0001` | CN to NG | sea / CIF Apapa | T-shirts (HS 610910) x1000 @ NGN 500; Laptops (HS 847130) x50 @ NGN 450,000 |
-| Trader A | Export shipment | `EXP-2026-0001` | NG to GB | sea / FOB Apapa Port | Cocoa beans (HS 180100) x500 @ USD 2,400; Sesame (HS 120740) x200 @ USD 1,500 |
-| Trader A | Parties | - | - | - | Exporter: GreenBuild Manufacturing Co Ltd (CN); Consignee: EazyPickins Distribution Ltd (NG) - linked to the import shipment |
-| Trader B | Import shipment | `IMP-2026-0001` | US to NG | air / FCA JFK Airport | Laptops (HS 847130) x20 @ NGN 420,000 |
+| Trader A | Export shipment | `EXP-2026-0001` | NG to GB | sea / FOB Apapa Port | Cocoa (HS 180100) x500 @ USD 2,400; Sesame (HS 120740) x200 @ USD 1,500 |
+| Trader A | Parties | - | - | - | Exporter: GreenBuild Manufacturing (CN); Consignee: EazyPickins Distribution (NG) |
+| Trader B | Import shipment | `IMP-2026-0001` | US to NG | air / FCA JFK | Laptops (HS 847130) x20 @ NGN 420,000 |
 | Agent | none | - | - | - | Used for access-grant tests |
 
 Direct links (log in as Trader A first):
 - Import: `https://lading-eazypickins.vercel.app/dashboard/shipments/154e31ad-6fa7-4e72-9948-9a8d4e99680c`
 - Export: `https://lading-eazypickins.vercel.app/dashboard/shipments/f0b650f5-6f71-4667-ab25-3747a3bb439a`
 
-## 4. Authentication
+## 4. Navigation
 
 | # | Steps | Expected |
 |---|---|---|
-| 4.1 | Log in as Trader A | Redirected to `/dashboard`, organization "Trader A Ltd" shown |
-| 4.2 | Sign out, sign back in | Works |
-| 4.3 | Visit `/dashboard` while signed out | Redirected to `/login` |
-| 4.4 | Visit `/login` while signed in | Redirected to `/dashboard` |
-| 4.5 | Wrong password | Inline error, no crash |
-| 4.6 | "Forgot password?" with a valid email | Neutral "if an account exists" message |
-| 4.7 | Submit the login form 11 times quickly with a wrong password | After 10 attempts, "Too many attempts" (rate limit) |
-| 4.8 | "Sign up" with a new email | "Check your email to confirm your account" (no session until confirmed) |
+| 4.1 | Look at the dashboard header on desktop | Six top-level items: Dashboard, Shipments, Trade tools, Directory, Insights, Account |
+| 4.2 | Hover or click "Trade tools" | Dropdown with Requirements, Screening, Landed cost, Trade terms |
+| 4.3 | Open a page from a dropdown | The parent stays highlighted; the dropdown closes on outside click |
+| 4.4 | Resize to mobile, open the menu | Grouped sections with headings; menu scrolls if long |
+| 4.5 | Keyboard: Tab to a group, press Enter, arrow to an item, press Enter | Navigates correctly |
 
-## 5. Onboarding and profile
+## 5. Authentication
 
 | # | Steps | Expected |
 |---|---|---|
-| 5.1 | Create a brand-new organization for a user with no org | Redirected to `/onboarding`, then to the dashboard after saving |
-| 5.2 | `/dashboard/profile`, edit name, phone, country, save | Saved, success message, values persist on reload |
+| 5.1 | Log in as Trader A | Redirected to `/dashboard` |
+| 5.2 | Sign out, sign back in | Works |
+| 5.3 | Visit `/dashboard` while signed out | Redirected to `/login` |
+| 5.4 | Visit `/login` while signed in | Redirected to `/dashboard` |
+| 5.5 | Wrong password | Inline error, no crash |
+| 5.6 | "Forgot password?" with a valid email | Neutral "if an account exists" message |
+| 5.7 | Submit the login form 11 times quickly with a wrong password | After 10 attempts, "Too many attempts" (rate limit) |
+| 5.8 | "Sign up" with a new email | "Check your email to confirm your account" (no session until confirmed) |
 
-## 6. Shipments
-
-| # | Steps | Expected |
-|---|---|---|
-| 6.1 | `/dashboard/shipments` as Trader A | 2 shipments listed (IMP-2026-0001, EXP-2026-0001) |
-| 6.2 | Create a shipment leaving Reference blank | Reference auto-generated, e.g. IMP-2026-0002 |
-| 6.3 | Origin and Destination fields | Searchable country dropdown; typing "Nig" filters to Nigeria; selecting submits the ISO code |
-| 6.4 | Add and remove line items | Rows add and remove |
-| 6.5 | Click "Suggest" on a line item (e.g. "Men's cotton t-shirts, knitted") | Up to 3 HS suggestions; clicking one fills the HS code (expect 610910) |
-| 6.6 | Submit with no origin or no items | Inline validation error |
-| 6.7 | Open Trader A's import shipment (link above) | Loads with facts, items, totals, documents, required documents, consistency card |
-| 6.8 | Confirm totals on the import shipment | Total quantity 1,050; total value NGN 23,000,000; net weight 300 kg, gross 330 kg |
-| 6.9 | Click "Edit shipment", change the Incoterm place, save | Saved, redirected to the detail page |
-| 6.10 | Edit a shipment and clear the Reference, save | Existing reference is kept |
-| 6.11 | Open Trader A's export shipment | Loads; total value USD 1,500,000 |
-
-## 7. Document generation
+## 6. Onboarding and profile
 
 | # | Steps | Expected |
 |---|---|---|
-| 7.1 | Import shipment, open Commercial Invoice | PDF opens: seller GreenBuild (CN), buyer EazyPickins (NG), 2 line items, total NGN 23,000,000, CIF Apapa |
-| 7.2 | Open Packing List | Quantities and weights, no prices |
-| 7.3 | Open Proforma Invoice | Titled "Proforma Invoice", marked not a final invoice |
-| 7.4 | Export shipment, open Commercial Invoice | Amounts in USD, total USD 1,500,000, FOB Apapa Port |
-| 7.5 | Generate documents past the Free plan limit (10/month) | Blocked with a plan-limit message |
-| 7.6 | Confirm each generation is recorded | Shipment document history / Admin audit events show it |
+| 6.1 | Create a new organization for a user with no org | `/onboarding`, then dashboard after saving |
+| 6.2 | `/dashboard/profile`, edit name, phone, country, save | Saved, persists on reload |
 
-## 8. Requirements checker and AI
+## 7. Contacts and products
 
 | # | Steps | Expected |
 |---|---|---|
-| 8.1 | `/dashboard/requirements`, import into NG, HS 8471.30 | Form M and PAAR required; SONCAP and NAFDAC conditional |
-| 8.2 | Export from NG, HS 1801.00, tick "Plant products" | NEPC and Phytosanitary required |
-| 8.3 | Export from NG, HS 8471.30 | No requirements (catch-all only) |
-| 8.4 | AI HS assistant: "Men's cotton t-shirts, knitted" | Suggests 610910 (high confidence) plus alternatives |
-| 8.5 | AI assistant with an empty description | Friendly validation message, no crash |
+| 7.1 | `/dashboard/parties` | Lists Trader A's parties (GreenBuild, EazyPickins) |
+| 7.2 | Add a new contact (type exporter, name, country, contact details) | Saved and listed |
+| 7.3 | Edit and delete a contact | Works |
+| 7.4 | CSV import on the contacts page: paste `type,name,country` rows | Created/updated counts shown |
+| 7.5 | `/dashboard/products` | Lists products; add, edit, delete work |
+| 7.6 | CSV import products: `description,hs_code` | Created/updated counts shown |
 
-## 9. Consistency checks
-
-| # | Steps | Expected |
-|---|---|---|
-| 9.1 | Open Trader A's import shipment, run consistency checks | Findings list with severities (should be minimal or none since parties/Incoterm/HS/weights are set) |
-| 9.2 | Create a shipment with no exporter/consignee/Incoterm and an item with no HS code, run checks | Warnings for missing exporter, consignee, Incoterm, HS code |
-| 9.3 | Set Incoterm FOB with mode air, run checks | Error: Incoterm/mode mismatch |
-| 9.4 | Mark a finding resolved | Row shows resolved |
-| 9.5 | Re-run checks | Findings replaced, counts update |
-
-## 10. Landed cost and trade terms
+## 8. Shipments and party capture
 
 | # | Steps | Expected |
 |---|---|---|
-| 10.1 | `/dashboard/landed-cost`, HS 610910, FOB 1,000,000, freight 100,000, insurance 10,000 | CIF 1,110,000; duty 222,000; CISS 40,000; ETLS 5,550; surcharge 15,540; VAT 104,481.75; total 1,497,571.75 |
-| 10.2 | Latest FX hint | Shown as the default exchange rate when available |
-| 10.3 | `/dashboard/trade-terms` | Table of 11 terms |
-| 10.4 | Recommender with mode air | Sea-only terms (FAS, FOB, CFR, CIF) excluded |
-| 10.5 | Recommender with mode sea | Sea terms included |
+| 8.1 | `/dashboard/shipments` as Trader A | 2 shipments listed |
+| 8.2 | New shipment, leave Reference blank | Auto-generated (IMP-2026-0002) |
+| 8.3 | Origin/Destination | Searchable country dropdown; submits the ISO code |
+| 8.4 | Seller / Exporter section: choose "New", fill name, address, country, contacts | Accepted |
+| 8.5 | Buyer / Consignee section: select an existing contact | Accepted |
+| 8.6 | Notify Party section: leave blank | Accepted (optional) |
+| 8.7 | Add/remove line items; click "Suggest" on a described item | HS suggestions appear; clicking one fills the HS code |
+| 8.8 | Submit with no origin or no items | Inline validation error |
+| 8.9 | Open the new shipment | Parties show on the detail page; totals correct |
+| 8.10 | Edit the shipment, change the consignee, save | Saved; parties update |
+| 8.11 | Confirm totals on the import shipment | Qty 1,050; value NGN 23,000,000; net 300 kg, gross 330 kg |
+| 8.12 | Change the status via the status control | Only allowed transitions offered; change saved |
+| 8.13 | Try an invalid transition (e.g. closed to draft) | Not offered / rejected |
 
-## 11. Billing (optional - see note)
-
-> Prices are production amounts (Starter NGN 10,000, Professional 35,000, Organization 90,000, Agent 50,000). Only run a real payment if your Vercel `PAYSTACK_SECRET_KEY` is a test key. Otherwise skip to 11.5.
-
-| # | Steps | Expected |
-|---|---|---|
-| 11.1 | `/dashboard/billing` | Current plan, usage bars, plan grid with correct NGN prices, renewal note |
-| 11.2 | Choose a paid plan | Redirected to Paystack with the correct amount |
-| 11.3 | Complete a test payment | Back on billing with a success banner, plan updated, "Renews on" date |
-| 11.4 | Cancel subscription | Access continues to period end; status cancelled |
-| 11.5 | Confirm the Paystack webhook | https://lading-eazypickins.vercel.app/api/paystack/webhook |
-| 11.6 | Confirm the callback cannot be replayed | Revisit the callback URL with the same reference; the period must NOT extend |
-
-## 12. Admin panel (log in as the platform admin)
+## 9. Documents
 
 | # | Steps | Expected |
 |---|---|---|
-| 12.1 | Dashboard shows an "Admin" card | Links to `/admin` |
-| 12.2 | Log in as Trader A, visit `/admin` | Redirected to `/dashboard` |
-| 12.3 | `/admin` | Counts for users, organizations, shipments, documents, active subscriptions, plus recent lists |
-| 12.4 | `/admin/users` | All users with email, name, country, organizations, roles, created, last sign-in |
-| 12.5 | `/admin/organizations` | All orgs with type, plan, member and shipment counts |
-| 12.6 | `/admin/subscriptions` | All subscriptions with org, plan, status, provider, period end |
-| 12.7 | `/admin/users`, click Edit on Trader A | Detail page with profile, password, and plan tools |
-| 12.8 | Edit a user profile and save | Saved |
-| 12.9 | Set a new password for a user | That user can log in with it |
-| 12.10 | Generate a reset link | A copyable link is shown |
-| 12.11 | Change an org plan to Professional | Plan updates; the org sees the new limits |
-| 12.12 | Change an org plan to Free | Plan updates; any active subscription is cancelled |
+| 9.1 | Import shipment: Commercial Invoice | PDF with seller/buyer, items, totals, CIF Apapa |
+| 9.2 | Packing List | Quantities and weights, no prices |
+| 9.3 | Proforma Invoice | Titled "Proforma Invoice" |
+| 9.4 | Bill of Lading | Ocean BL data sheet with shipper, consignee, notify, ports |
+| 9.5 | Air Waybill | AWB data sheet |
+| 9.6 | Certificate of Origin | Exporter, consignee, origin, goods, HS code |
+| 9.7 | Shipper's Letter of Instruction | Instructions to the forwarder |
+| 9.8 | VGM Declaration | Verified gross mass declaration |
+| 9.9 | Packing Declaration | Packing materials declaration |
+| 9.10 | Download document set | A single merged PDF of the standard set |
+| 9.11 | Upload a logo, signature and seal in Settings, then open a document | Branding appears on the PDF |
+| 9.12 | Generate documents past the Free plan limit | Blocked with a plan-limit message |
 
-## 13. Data sync console
-
-| # | Steps | Expected |
-|---|---|---|
-| 13.1 | `/dashboard/data` as admin | Sources table with status, cadence, last checked, hash |
-| 13.2 | Run the FX API source ("Exchange Rate API (NGN)") | Status changes; a pending staged change appears with parsed rates |
-| 13.3 | Approve the FX change | Rates written; the landed cost hint updates |
-| 13.4 | Reject a change | Marked rejected, not applied |
-| 13.5 | Confirm the NCS source | Shows degraded (NCS blocks datacenter IPs) - expected |
-
-## 14. Security tests
-
-Run these after the security fixes (already applied). The isolation tests are the most important.
+## 10. Requirements checker and AI
 
 | # | Steps | Expected |
 |---|---|---|
-| S1 | As Trader B, open Trader A's import shipment link (`/dashboard/shipments/154e31ad-6fa7-4e72-9948-9a8d4e99680c`) | 404, no data |
-| S2 | As Trader B, open `.../api/shipments/154e31ad-6fa7-4e72-9948-9a8d4e99680c/documents/commercial-invoice` | 404 |
-| S3 | **Cross-tenant access grant.** As Trader B (via REST with Trader B's token), POST to `/rest/v1/shipment_access` with `shipment_id` = Trader A's shipment and `org_id` = Trader B's org | Rejected with a row-level security error (403) |
-| S4 | As Trader B, PATCH Trader A's shipment | No effect; data unchanged |
-| S5 | Open `/auth/callback?next=https://example.com` | Stays on the Lading domain (no external redirect) |
+| 10.1 | Import into NG, HS 8471.30 | Form M and PAAR required; SONCAP and NAFDAC conditional |
+| 10.2 | Export NG to GB, HS 1801.00 | NEPC required; Certificate of Origin and Phytosanitary conditional |
+| 10.3 | Export NG to GB, no HS code | NEPC required (catch-all now applies) |
+| 10.4 | Export NG to US, HS 1801.00 (cocoa) | FDA Prior Notice, NEPC and Phytosanitary required |
+| 10.5 | Export NG to US, HS 1207.40 (sesame) | FDA Prior Notice, NEPC and Phytosanitary required |
+| 10.6 | Export NG to US, HS 8471.30, tick "Food products" | FDA Prior Notice required |
+| 10.7 | Export NG to US, HS 8471.30, no attributes | FDA Prior Notice conditional (may apply) |
+| 10.8 | Export NG to GB, HS 1801.00 | No FDA rule (US only) |
+| 10.9 | Export CN to NG (not a Nigeria corridor) | Empty state with the explanatory note |
+| 10.10 | AI HS assistant: "Men's cotton t-shirts, knitted" | Suggests 610910 with a confidence label plus alternatives |
+| 10.11 | Confirm the confidence label meaning | High = likely, medium/low = alternatives to verify; disclaimer shown |
+
+## 11. Consistency checks
+
+| # | Steps | Expected |
+|---|---|---|
+| 11.1 | Run checks on the import shipment | Minimal or no findings (parties, Incoterm, HS, weights set) |
+| 11.2 | Create a shipment with no parties/Incoterm and an item with no HS code, run checks | Warnings for each |
+| 11.3 | Set Incoterm FOB with mode air, run checks | Error: Incoterm/mode mismatch |
+| 11.4 | Mark a finding resolved | Row shows resolved |
+| 11.5 | Re-run checks | Findings replaced, counts update |
+
+## 12. Restricted-party screening
+
+| # | Steps | Expected |
+|---|---|---|
+| 12.1 | `/dashboard/screening`, screen "LIMITED LIABILITY COMPANY AVIAKOMPANIYA POBEDA" | Returns a match from the SDN list with a high score |
+| 12.2 | Screen an ordinary name (e.g. "EazyPickins Distribution Ltd") | No matches |
+| 12.3 | On the import shipment, click "Screen parties" | Runs and shows results or an all-clear state |
+| 12.4 | As admin, `/dashboard/data`, click "Sync screening list" | Re-ingests the CSL and reports counts |
+
+## 13. Landed cost, CBM and trade terms
+
+| # | Steps | Expected |
+|---|---|---|
+| 13.1 | `/dashboard/landed-cost`, HS 610910, FOB 1,000,000, freight 100,000, insurance 10,000 | CIF 1,110,000; duty 222,000; CISS 40,000; ETLS 5,550; surcharge 15,540; VAT 104,481.75; total 1,497,571.75 |
+| 13.2 | Change the currency selector to USD | Exchange rate prefilled from the latest FX rate; totals convert |
+| 13.3 | CBM card: sea, 10 cartons of 60x40x40 cm | CBM 0.96 |
+| 13.4 | CBM card: air, same cartons | Volumetric weight 160.32 kg; chargeable weight uses the greater of actual and volumetric |
+| 13.5 | `/dashboard/trade-terms` | 11 terms table; recommender excludes sea-only terms for air |
+
+## 14. Attachments, sharing, access, audit
+
+| # | Steps | Expected |
+|---|---|---|
+| 14.1 | Import shipment, Attachments card, upload a PDF | Uploaded and listed |
+| 14.2 | Download an attachment | Signed URL opens the file |
+| 14.3 | Delete an attachment | Removed from the list |
+| 14.4 | Share card: create a share link with a 7-day expiry | Link shown with expiry |
+| 14.5 | Open the share link in an incognito window | Shipment summary + document set download, no login required |
+| 14.6 | Revoke the share link, reopen it | Friendly "link is invalid or expired" message |
+| 14.7 | Access card: grant the Agent org access by org id | Grant listed |
+| 14.8 | Log in as the Agent org | The shared shipment is visible |
+| 14.9 | Revoke access, refresh as the Agent | No longer visible |
+| 14.10 | `/dashboard/audit` | Recent events (document download, shipment create/update, status change, screening) with user and timestamp |
+
+## 15. Reports and notifications
+
+| # | Steps | Expected |
+|---|---|---|
+| 15.1 | `/dashboard/reports` | Stat cards (shipments, documents, value) and counts by status, channel, mode, and a 6-month table |
+| 15.2 | Create a shipment, then open the notification bell | A "shipment created" notification appears |
+| 15.3 | Change a shipment status | A notification appears |
+| 15.4 | Mark all read | Unread count goes to zero |
+
+## 16. Billing (optional - see note)
+
+> Prices are production amounts (Starter NGN 10,000, Professional 35,000, Organization 90,000, Agent 50,000). Only run a real payment if your Vercel Paystack key is a test key.
+
+| # | Steps | Expected |
+|---|---|---|
+| 16.1 | `/dashboard/billing` | Current plan, usage bars, plan grid with NGN prices, renewal note |
+| 16.2 | Choose a paid plan | Redirected to Paystack with the correct amount |
+| 16.3 | Complete a test payment | Back on billing with success, plan updated, "Renews on" date |
+| 16.4 | Cancel subscription | Access continues to period end; status cancelled |
+| 16.5 | Revisit the callback URL with the same reference | Period must NOT extend (replay protection) |
+
+## 17. Public API and webhooks
+
+| # | Steps | Expected |
+|---|---|---|
+| 17.1 | `/dashboard/api`, create an API key | Plain key shown once; only the prefix is listed afterwards |
+| 17.2 | `curl -H "Authorization: Bearer <key>" https://lading-eazypickins.vercel.app/api/v1/shipments` | JSON list of the org's shipments |
+| 17.3 | `POST /api/v1/shipments` with a JSON body | Shipment created; returns id and reference |
+| 17.4 | `GET /api/v1/shipments/<id>` for another org's shipment | 404 |
+| 17.5 | `POST /api/v1/requirements` | Returns the required documents |
+| 17.6 | Call with no or a revoked key | 401 |
+| 17.7 | Add a webhook endpoint, then create a shipment | A `shipment.created` delivery is recorded with an `X-Lading-Signature` header |
+| 17.8 | Revoke the API key | Subsequent calls return 401 |
+
+## 18. Admin and data sync
+
+| # | Steps | Expected |
+|---|---|---|
+| 18.1 | Dashboard shows an "Admin" card | Links to `/admin` |
+| 18.2 | Non-admin visits `/admin` | Redirected to `/dashboard` |
+| 18.3 | `/admin`, `/admin/users`, `/admin/organizations`, `/admin/subscriptions` | All load with data |
+| 18.4 | `/admin/users`, Edit a user | Profile edit, set password, generate reset link, change plan |
+| 18.5 | `/dashboard/data` | Sources table with status, cadence, last checked, hash |
+| 18.6 | Run the FX API source, approve the change | FX rates written; landed cost hint updates |
+| 18.7 | Confirm the NCS source | Degraded (NCS blocks datacenter IPs) - expected |
+
+## 19. Security tests
+
+| # | Steps | Expected |
+|---|---|---|
+| S1 | As Trader B, open Trader A's shipment URL | 404, no data |
+| S2 | As Trader B, open Trader A's document URL | 404 |
+| S3 | As Trader B (REST with Trader B's token), POST `shipment_access` for Trader A's shipment | Rejected (403 row-level security) |
+| S4 | As Trader B, PATCH Trader A's shipment | No effect |
+| S5 | Open `/auth/callback?next=https://example.com` | Stays on the Lading domain |
 | S6 | GET `/api/cron/sync` without the Authorization header | 401 |
 | S7 | POST `/api/paystack/webhook` with a bad signature | 401 |
-| S8 | As a normal user, call an admin action (change org plan) | Rejected as unauthorized |
-| S9 | Search the built client bundle for `SUPABASE_SERVICE_ROLE_KEY` / the service key | Not present |
-| S10 | Create a shipment with a reference containing a double quote, generate a document | No header error, valid PDF returned |
-| S11 | Log in as Agent, then as Trader A grant the Agent org access to a shipment (insert shipment_access as the owner) | Trader A can insert (201); the Agent can then read that shipment |
+| S8 | As a normal user, call an admin action | Rejected as unauthorized |
+| S9 | Call `/api/v1/shipments` with no key | 401 |
+| S10 | Open a share link after its expiry | Rejected |
+| S11 | Search the client bundle for the service role key | Not present |
 
-## 15. Regression checklist (before each release)
+## 20. Regression checklist (before each release)
 
 - [ ] `pnpm lint` passes
 - [ ] `pnpm build` passes
 - [ ] No em dashes in `src` (search for the U+2014 character)
 - [ ] No secrets committed (`git grep -E "sk_live_|sk_test_|sb_secret_|github_pat_|vcp_|sbp_"`)
-- [ ] Auth, shipments, documents, requirements, consistency, landed cost, trade terms, billing, admin all load
+- [ ] All dashboard pages load
 - [ ] Vercel deployment is Ready; env vars present for Production and Preview
 - [ ] Paystack webhook URL set; Supabase redirect URLs include `/auth/callback`
 - [ ] Supabase email confirmation matches the SMTP situation
+- [ ] Screening data present (`screening_entries` count greater than 20000)
 
-## 16. Known issues and notes
+## 21. Known issues and notes
 
 - Email confirmation is ON but SMTP is not configured, so self-service signup cannot complete. Use the test accounts, or configure SMTP.
-- NCS/CBN sources return HTTP 403 to datacenter IPs, so those sync sources show as degraded. The FX API source works.
-- Preview deployments share the production Supabase project (accepted, previews are behind Vercel Authentication).
-- Prices are the production amounts.
+- NCS and CBN sources return HTTP 403 to datacenter IPs, so those sync sources show as degraded. The FX API source works.
+- Preview deployments share the production Supabase project (previews are behind Vercel Authentication).
+- Requirement rules cover imports into Nigeria, exports from Nigeria, and agri exports from Nigeria to the US. Other corridors return the empty state.
+- Screening uses the US Consolidated Screening List only; UN and EU lists are not yet ingested.
+- Free OpenRouter models can be inconsistent; a fallback chain mitigates this.
