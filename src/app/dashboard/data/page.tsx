@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   approveChangeAction,
+  ingestScreeningListAction,
   rejectChangeAction,
   runAllSyncAction,
   runSourceSyncAction,
@@ -164,6 +165,20 @@ export default async function DataSourcesPage() {
               </form>
               <InfoTip label="About syncing Paystack plans">
                 Creates or updates the monthly Paystack plans for paid tiers.
+              </InfoTip>
+            </div>
+            <div className="flex items-center gap-2">
+              <form action={ingestScreeningListAction}>
+                <button
+                  type="submit"
+                  className="rounded-md border border-hairline px-5 py-2.5 text-sm font-medium text-ink hover:bg-cloud"
+                >
+                  Sync screening list
+                </button>
+              </form>
+              <InfoTip label="About syncing the screening list">
+                Downloads the US Consolidated Screening List and upserts the
+                restricted parties used for name screening.
               </InfoTip>
             </div>
             <form action={runAllSyncAction}>

@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { listFindings } from "@/lib/consistency-store";
 import { formatMoney, formatNumber, titleCase } from "@/lib/documents/pdf";
 import { getShipmentRequirements } from "@/lib/requirements";
+import { listScreeningResults } from "@/lib/screening";
 import { listShipmentAccess } from "@/lib/shipment-access";
 import { getShipmentWithItems } from "@/lib/shipments";
 import { listShareLinks } from "@/lib/share-links";
@@ -20,6 +21,7 @@ import {
   revokeShipmentAccessAction,
   uploadShipmentFileAction,
 } from "../actions";
+import { ScreeningCard } from "./screening-card";
 
 const documents = [
   { type: "commercial-invoice", label: "Commercial Invoice" },
@@ -55,11 +57,15 @@ export default async function ShipmentDetailPage({
 
   const requiredDocuments = await getShipmentRequirements(shipment);
   const findings = await listFindings(id);
-  const [files, shareLinks, accessGrants] = await Promise.all([
+  const [files, shareLinks, accessGrants, screeningResults] = await Promise.all([
     listShipmentFiles(id),
     listShareLinks(id),
     listShipmentAccess(id),
+    listScreeningResults(shipment.org_id),
   ]);
+  const shipmentScreening = screeningResults.filter(
+    (result) => result.shipment_id === shipment.id,
+  );
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
 
   const total = shipment.items.reduce(
@@ -142,6 +148,11 @@ export default async function ShipmentDetailPage({
         </section>
 
         <ConsistencyFindings shipmentId={shipment.id} findings={findings} />
+
+        <ScreeningCard
+          shipmentId={shipment.id}
+          initialResults={shipmentScreening}
+        />
 
         <section className="mt-8 overflow-hidden rounded-xl border border-hairline bg-white">
           <div className="flex items-center justify-between border-b border-hairline px-6 py-4">

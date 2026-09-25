@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { isAdminEmail } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { ensureAllPaystackPlans } from "@/lib/payment-plans";
+import { ingestCsl } from "@/lib/screening";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runDueSources, runSourceSync } from "@/lib/sync/engine";
 
@@ -95,6 +96,12 @@ export async function runAllSyncAction(): Promise<void> {
 export async function syncPaystackPlansAction(): Promise<void> {
   await requireAdmin();
   await ensureAllPaystackPlans();
+  revalidatePath("/dashboard/data");
+}
+
+export async function ingestScreeningListAction(): Promise<void> {
+  await requireAdmin();
+  await ingestCsl();
   revalidatePath("/dashboard/data");
 }
 

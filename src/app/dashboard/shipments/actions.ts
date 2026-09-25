@@ -11,6 +11,7 @@ import type { TradeChannel, TransportMode } from "@/lib/documents/types";
 import { suggestHsCodes, type HsSuggestion } from "@/lib/hs-suggest";
 import { upsertParty } from "@/lib/parties";
 import { allowRequest } from "@/lib/rate-limit";
+import { screenShipmentParties, type ScreeningResult } from "@/lib/screening";
 import { generateDocumentSet } from "@/lib/documents/set";
 import { createShipment, getShipmentWithItems, toDocumentPayload, type CreateShipmentItemInput } from "@/lib/shipments";
 import {
@@ -676,6 +677,58 @@ export async function revokeShipmentAccessAction(
 
   if (shipmentId) {
     revalidatePath(`/dashboard/shipments/${shipmentId}`);
+  }
+}
+
+export type ScreenPartiesState =
+  | {
+      status: "success" | "error";
+      results: ScreeningResult[];
+      message?: string;
+    }
+  | undefined;
+
+export async function screenShipmentPartiesAction(
+  _state: ScreenPartiesState,
+  formData: FormData,
+): Promise<ScreenPartiesState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { status: "error", results: [], message: "Please sign in." };
+  }
+  const organization = await getActiveOrg();
+  if (!organization) {
+    return { status: "error", results: [], message: "No active organization." };
+  }
+
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  if (!shipmentId) {
+    return { status: "error", results: [], message: "Shipment not found." };
+  }
+
+  const shipment = await getShipmentWithItems(shipmentId);
+  if (!shipment || shipment.org_id !== organization.id) {
+    return { status: "error", results: [], message: "Shipment not found." };
+  }
+
+  try {
+    const results = await screenShipmentParties(shipmentId);
+    await recordAuditEvent({
+      orgId: organization.id,
+      userId: user.id,
+      action: "screening.run",
+      entityType: "shipment",
+      entityId: shipmentId,
+      metadata: { matches: results.length },
+    });
+    revalidatePath(`/dashboard/shipments/${shipmentId}`);
+    return { status: "success", results };
+  } catch {
+    return {
+      status: "error",
+      results: [],
+      message: "Screening failed. Please try again.",
+    };
   }
 }
 
