@@ -1,22 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BlogCover } from "@/components/blog-cover";
 import { Disclaimer } from "@/components/disclaimer";
 import { MarketingFooter } from "@/components/marketing-footer";
 import { MarketingHeader } from "@/components/marketing-header";
-import { PLATFORM_LABELS, PLATFORM_ORDER } from "@/lib/blog";
+import {
+  PLATFORM_LABELS,
+  PLATFORM_ORDER,
+  coverImageUrl,
+  youtubeId,
+} from "@/lib/blog";
 import { getPublishedPost } from "@/lib/blog-store";
-
-function youtubeId(url: string): string | null {
-  const match = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/,
-  );
-  if (!match) {
-    return null;
-  }
-  const id = match[1];
-  return id.startsWith("REPLACE") ? null : id;
-}
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString("en-GB", {
@@ -85,6 +80,15 @@ export default async function BlogPostPage({
         <p className="mt-6 text-lg leading-relaxed text-ink">
           {post.description}
         </p>
+
+        <div className="mt-8 aspect-video w-full overflow-hidden rounded-xl border border-hairline">
+          <BlogCover
+            src={coverImageUrl(post)}
+            alt={post.title}
+            title={post.title}
+            className="h-full w-full object-cover"
+          />
+        </div>
 
         <div className="mt-8 overflow-hidden rounded-xl border border-hairline bg-deep-harbor">
           {videoId ? (

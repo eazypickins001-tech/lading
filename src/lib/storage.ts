@@ -4,10 +4,18 @@ import { createClient } from "@/lib/supabase/server";
 
 export const DOCUMENT_BUCKET = "documents";
 export const BRANDING_BUCKET = "branding";
+export const BLOG_BUCKET = "blog";
 
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const MAX_BRANDING_BYTES = 2 * 1024 * 1024;
+const MAX_COVER_BYTES = 3 * 1024 * 1024;
 const SIGNED_URL_TTL_SECONDS = 3600;
+
+const COVER_MIME_EXTENSIONS: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+};
 
 const DOCUMENT_MIME_ALLOWLIST = new Set<string>([
   "application/pdf",
@@ -200,6 +208,29 @@ export async function uploadBranding(
   }
 
   return url;
+}
+
+export async function uploadBlogCover(file: File): Promise<string> {
+  if (file.size > MAX_COVER_BYTES) {
+    throw new Error("Image exceeds the 3MB limit.");
+  }
+  const extension = COVER_MIME_EXTENSIONS[file.type];
+  if (!extension) {
+    throw new Error("Only PNG, JPEG or WebP images are allowed.");
+  }
+
+  const supabase = await createClient();
+  const path = `cover-${Date.now()}.${extension}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(BLOG_BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false });
+
+  if (uploadError) {
+    throw new Error("Could not upload the cover image.");
+  }
+
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/blog/${path}`;
 }
 
 export async function getOrgBranding(

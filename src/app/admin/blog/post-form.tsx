@@ -142,6 +142,53 @@ export function PostForm({ post }: { post?: BlogPostRecord }) {
 
       <fieldset className="rounded-xl border border-hairline bg-white p-6">
         <legend className="px-2 text-sm font-semibold uppercase tracking-widest text-muted">
+          Cover image
+        </legend>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div>
+            <label htmlFor="cover" className={labelClass}>
+              Upload image
+            </label>
+            <input
+              id="cover"
+              name="cover"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="mt-1 block w-full text-sm text-ink file:mr-3 file:rounded-md file:border file:border-hairline file:bg-cloud file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink hover:file:border-signal-teal"
+            />
+            <p className={hintClass}>PNG, JPEG or WebP, up to 3MB.</p>
+          </div>
+
+          <div>
+            <label htmlFor="coverUrl" className={labelClass}>
+              Or image URL
+            </label>
+            <input
+              id="coverUrl"
+              name="coverUrl"
+              type="url"
+              defaultValue={post?.coverUrl ?? ""}
+              className={inputClass}
+            />
+            <p className={hintClass}>An uploaded file takes precedence.</p>
+          </div>
+        </div>
+
+        {post?.coverUrl ? (
+          <div className="mt-5">
+            <p className="text-xs text-muted">Current cover</p>
+            <img
+              src={post.coverUrl}
+              alt={`Current cover for ${post.title}`}
+              loading="lazy"
+              className="mt-2 aspect-video w-full max-w-sm rounded-md border border-hairline bg-white object-cover"
+            />
+          </div>
+        ) : null}
+      </fieldset>
+
+      <fieldset className="rounded-xl border border-hairline bg-white p-6">
+        <legend className="px-2 text-sm font-semibold uppercase tracking-widest text-muted">
           Videos
         </legend>
         <div className="grid gap-5 lg:grid-cols-2">

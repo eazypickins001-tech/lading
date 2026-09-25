@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { isAdminEmail } from "@/lib/admin";
+import { adminEmails, isAdminEmail } from "@/lib/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { ensureAllPaystackPlans } from "@/lib/payment-plans";
 import { ingestCsl } from "@/lib/screening";
@@ -168,6 +168,25 @@ export async function rejectChangeAction(formData: FormData): Promise<void> {
       reviewed_at: new Date().toISOString(),
     })
     .eq("id", changeId);
+
+  revalidatePath("/dashboard/data");
+}
+
+export async function syncPlatformAdminsAction(): Promise<void> {
+  await requireAdmin();
+
+  const emails = adminEmails();
+  if (emails.length === 0) {
+    return;
+  }
+
+  const supabase = createAdminClient();
+  await supabase
+    .from("platform_admins")
+    .upsert(
+      emails.map((email) => ({ email })),
+      { onConflict: "email" },
+    );
 
   revalidatePath("/dashboard/data");
 }

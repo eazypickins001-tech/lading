@@ -11,6 +11,7 @@ import {
   runAllSyncAction,
   runSourceSyncAction,
   syncPaystackPlansAction,
+  syncPlatformAdminsAction,
 } from "./actions";
 
 type DataSourceRow = {
@@ -179,6 +180,20 @@ export default async function DataSourcesPage() {
               <InfoTip label="About syncing the screening list">
                 Downloads the US Consolidated Screening List and upserts the
                 restricted parties used for name screening.
+              </InfoTip>
+            </div>
+            <div className="flex items-center gap-2">
+              <form action={syncPlatformAdminsAction}>
+                <button
+                  type="submit"
+                  className="rounded-md border border-hairline px-5 py-2.5 text-sm font-medium text-ink hover:bg-cloud"
+                >
+                  Sync platform admins
+                </button>
+              </form>
+              <InfoTip label="About syncing platform admins">
+                Copies the emails in ADMIN_EMAILS into the platform_admins table
+                so admin-only database and storage access stays in sync.
               </InfoTip>
             </div>
             <form action={runAllSyncAction}>

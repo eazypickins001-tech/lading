@@ -16,6 +16,7 @@ export type BlogPostInput = {
   youtubeUrl: string | null;
   videos: BlogVideo[];
   published: boolean;
+  coverUrl: string | null;
 };
 
 type BlogPostRow = {
@@ -30,10 +31,11 @@ type BlogPostRow = {
   youtube_url: string | null;
   videos: unknown;
   created_at: string;
+  cover_url: string | null;
 };
 
 const SELECT_COLUMNS =
-  "id, slug, title, description, body, tags, published, published_at, youtube_url, videos, created_at";
+  "id, slug, title, description, body, tags, published, published_at, youtube_url, videos, created_at, cover_url";
 
 function isPlatform(value: string): value is SocialPlatform {
   return (PLATFORM_ORDER as string[]).includes(value);
@@ -78,6 +80,7 @@ function toRecord(row: BlogPostRow): BlogPostRecord {
     body: toStringArray(row.body),
     published: row.published,
     createdAt: row.created_at,
+    coverUrl: row.cover_url ?? null,
   };
 }
 
@@ -157,6 +160,7 @@ export async function createPost(input: BlogPostInput): Promise<string | null> {
       published_at: input.published ? new Date().toISOString() : null,
       youtube_url: input.youtubeUrl,
       videos: input.videos,
+      cover_url: input.coverUrl,
     })
     .select("id")
     .single();
@@ -198,6 +202,7 @@ export async function updatePost(
       published_at: publishedAt,
       youtube_url: input.youtubeUrl,
       videos: input.videos,
+      cover_url: input.coverUrl,
     })
     .eq("id", id);
 

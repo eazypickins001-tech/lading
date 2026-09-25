@@ -13,6 +13,7 @@ import {
   updatePost,
   type BlogPostInput,
 } from "@/lib/blog-store";
+import { uploadBlogCover } from "@/lib/storage";
 
 export type BlogActionState =
   | {
@@ -72,6 +73,8 @@ export async function savePostAction(
   const youtubeUrl = String(formData.get("youtubeUrl") ?? "").trim() || null;
   const videos = parseVideos(formData);
   const published = formData.get("published") === "on";
+  const coverFile = formData.get("cover");
+  let coverUrl = String(formData.get("coverUrl") ?? "").trim() || null;
 
   if (!title) {
     return { status: "error", message: "A title is required." };
@@ -79,6 +82,14 @@ export async function savePostAction(
 
   if (!slug) {
     return { status: "error", message: "A slug is required." };
+  }
+
+  if (coverFile instanceof File && coverFile.size > 0) {
+    try {
+      coverUrl = await uploadBlogCover(coverFile);
+    } catch {
+      return { status: "error", message: "Could not upload the cover image." };
+    }
   }
 
   const input: BlogPostInput = {
@@ -90,6 +101,7 @@ export async function savePostAction(
     youtubeUrl,
     videos,
     published,
+    coverUrl,
   };
 
   const saved = id
