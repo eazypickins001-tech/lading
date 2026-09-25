@@ -17,7 +17,8 @@ export type NavKey =
   | "settings"
   | "audit"
   | "billing"
-  | "api";
+  | "api"
+  | "blog";
 
 type NavItem = { key: NavKey; href: string; label: string };
 type NavGroup = { label: string; items: NavItem[] };
@@ -60,6 +61,7 @@ const entries: NavEntry[] = [
       { key: "billing", href: "/dashboard/billing", label: "Billing" },
       { key: "api", href: "/dashboard/api", label: "API" },
       { key: "settings", href: "/dashboard/settings", label: "Settings" },
+      { key: "blog", href: "/blog", label: "Blog" },
     ],
   },
 ];
