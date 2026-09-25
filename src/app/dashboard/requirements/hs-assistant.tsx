@@ -27,6 +27,11 @@ export function HsAssistant() {
           candidate Harmonized System codes. Always confirm the final code with
           customs or your broker.
         </InfoTip>
+        <InfoTip label="About confidence">
+          Confidence shows how sure the model is. High means it is confident in
+          that heading. Medium and low are alternatives to verify against the
+          product details. It is a suggestion, not a ruling.
+        </InfoTip>
       </div>
 
       <form action={action} className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -68,6 +73,7 @@ export function HsAssistant() {
                   {suggestion.code}
                 </span>
                 <span
+                  title={`Confidence: ${suggestion.confidence}. High is the model's most likely heading; medium and low are alternatives to verify.`}
                   className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${confidenceStyles[suggestion.confidence]}`}
                 >
                   {suggestion.confidence}

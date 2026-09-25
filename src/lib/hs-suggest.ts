@@ -93,6 +93,12 @@ export async function suggestHsCodes(
 
   const items = extractItems(raw);
 
+  const confidenceOrder: Record<HsSuggestion["confidence"], number> = {
+    high: 0,
+    medium: 1,
+    low: 2,
+  };
+
   return items
     .map((item) => {
       const record = (item ?? {}) as Record<string, unknown>;
@@ -105,5 +111,8 @@ export async function suggestHsCodes(
       };
     })
     .filter((item) => item.code.length >= 4 && item.description.length > 0)
+    .sort(
+      (a, b) => confidenceOrder[a.confidence] - confidenceOrder[b.confidence],
+    )
     .slice(0, 5);
 }

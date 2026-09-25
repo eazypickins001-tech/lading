@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Disclaimer } from "@/components/disclaimer";
 import { LadingLogo } from "@/components/lading-logo";
 import { recordAuditEvent } from "@/lib/audit";
 import { getShareLinkByToken } from "@/lib/share-links";
@@ -118,6 +119,8 @@ export default async function SharePage({
           This link expires on {new Date(link.expiresAt).toISOString().slice(0, 10)}.
         </p>
       </div>
+
+      <Disclaimer variant="compact" className="mt-8" />
     </main>
   );
 }

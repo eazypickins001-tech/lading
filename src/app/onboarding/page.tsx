@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Disclaimer } from "@/components/disclaimer";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
 import { OnboardingForm } from "./onboarding-form";
 
@@ -27,6 +28,10 @@ export default async function OnboardingPage() {
 
         <div className="rounded-xl border border-hairline bg-white p-6">
           <OnboardingForm />
+        </div>
+
+        <div className="mt-8">
+          <Disclaimer variant="compact" />
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdminNav } from "@/components/admin-nav";
+import { Disclaimer } from "@/components/disclaimer";
 import { LadingLogo } from "@/components/lading-logo";
 import { requireAdmin } from "@/lib/admin";
 
@@ -30,6 +31,12 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
         {children}
       </main>
+
+      <footer className="border-t border-hairline bg-white">
+        <div className="mx-auto w-full max-w-6xl px-6 py-6">
+          <Disclaimer />
+        </div>
+      </footer>
     </div>
   );
 }
