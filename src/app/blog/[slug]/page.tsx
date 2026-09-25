@@ -94,7 +94,7 @@ export default async function BlogPostPage({
           {videoId ? (
             <div className="aspect-[9/16] w-full max-w-sm mx-auto">
               <iframe
-                src={`https://www.youtube.com/embed/${videoId}`}
+                src={`https://www.youtube-nocookie.com/embed/${videoId}`}
                 title={post.title}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen

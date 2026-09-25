@@ -48,14 +48,19 @@ export type BlogPostRecord = BlogPost & {
 };
 
 export function youtubeId(url: string): string | null {
-  const match = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/,
+  const trimmed = url.trim();
+  const match = trimmed.match(
+    /(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/,
   );
-  if (!match) {
+  const candidate = match
+    ? match[1]
+    : /^[A-Za-z0-9_-]{11}$/.test(trimmed)
+      ? trimmed
+      : null;
+  if (!candidate || candidate.startsWith("REPLACE")) {
     return null;
   }
-  const id = match[1];
-  return id.startsWith("REPLACE") ? null : id;
+  return candidate;
 }
 
 export function coverImageUrl(
