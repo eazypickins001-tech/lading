@@ -13,7 +13,7 @@ const BLANK = "____________________________________________";
 export async function generateBillOfLading(
   payload: ShipmentDocumentPayload,
 ): Promise<Uint8Array> {
-  const layout = await PdfLayout.create("Bill of Lading");
+  const layout = await PdfLayout.create("Bill of Lading", payload.branding);
 
   layout.titleBlock([
     { label: "Reference", value: payload.reference ?? "-" },

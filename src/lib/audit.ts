@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuditEventInput = {
@@ -9,9 +10,12 @@ export type AuditEventInput = {
   metadata?: Record<string, unknown>;
 };
 
-export async function recordAuditEvent(input: AuditEventInput): Promise<void> {
+export async function recordAuditEvent(
+  input: AuditEventInput,
+  client?: SupabaseClient,
+): Promise<void> {
   try {
-    const supabase = await createClient();
+    const supabase = client ?? (await createClient());
     await supabase.from("audit_events").insert({
       org_id: input.orgId,
       user_id: input.userId,

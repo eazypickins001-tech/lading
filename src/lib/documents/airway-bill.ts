@@ -13,7 +13,7 @@ const BLANK = "____________________________________________";
 export async function generateAirWaybill(
   payload: ShipmentDocumentPayload,
 ): Promise<Uint8Array> {
-  const layout = await PdfLayout.create("Air Waybill");
+  const layout = await PdfLayout.create("Air Waybill", payload.branding);
 
   layout.titleBlock([
     { label: "Reference", value: payload.reference ?? "-" },

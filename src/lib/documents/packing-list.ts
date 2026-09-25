@@ -12,7 +12,7 @@ import type { ShipmentDocumentPayload } from "./types";
 export async function generatePackingList(
   payload: ShipmentDocumentPayload,
 ): Promise<Uint8Array> {
-  const layout = await PdfLayout.create("Packing List");
+  const layout = await PdfLayout.create("Packing List", payload.branding);
 
   layout.titleBlock([
     { label: "Reference", value: payload.reference ?? "-" },

@@ -8,7 +8,18 @@ import { getCurrentUser } from "@/lib/auth";
 import { listFindings } from "@/lib/consistency-store";
 import { formatMoney, formatNumber, titleCase } from "@/lib/documents/pdf";
 import { getShipmentRequirements } from "@/lib/requirements";
+import { listShipmentAccess } from "@/lib/shipment-access";
 import { getShipmentWithItems } from "@/lib/shipments";
+import { listShareLinks } from "@/lib/share-links";
+import { listShipmentFiles } from "@/lib/storage";
+import {
+  createShareLinkAction,
+  deleteShipmentFileAction,
+  grantShipmentAccessAction,
+  revokeShareLinkAction,
+  revokeShipmentAccessAction,
+  uploadShipmentFileAction,
+} from "../actions";
 
 const documents = [
   { type: "commercial-invoice", label: "Commercial Invoice" },
@@ -44,6 +55,12 @@ export default async function ShipmentDetailPage({
 
   const requiredDocuments = await getShipmentRequirements(shipment);
   const findings = await listFindings(id);
+  const [files, shareLinks, accessGrants] = await Promise.all([
+    listShipmentFiles(id),
+    listShareLinks(id),
+    listShipmentAccess(id),
+  ]);
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
 
   const total = shipment.items.reduce(
     (sum, item) => sum + item.quantity * item.unit_value,
@@ -240,6 +257,220 @@ export default async function ShipmentDetailPage({
               </a>
             ))}
           </div>
+          <a
+            href={`/api/shipments/${shipment.id}/documents/set`}
+            className="mt-4 inline-flex rounded-md bg-signal-teal px-5 py-2.5 text-sm font-medium text-white hover:bg-signal-teal/90"
+          >
+            Download document set
+          </a>
+        </section>
+
+        <section className="mt-8 rounded-xl border border-hairline bg-white p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+            Attachments
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Upload supporting files such as packing photos, permits or scanned
+            certificates. Files are private to your organization.
+          </p>
+
+          <form
+            action={uploadShipmentFileAction}
+            className="mt-5 flex flex-wrap items-center gap-3"
+          >
+            <input type="hidden" name="shipmentId" value={shipment.id} />
+            <input
+              type="file"
+              name="file"
+              required
+              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv"
+              className="text-sm text-ink file:mr-3 file:rounded-md file:border file:border-hairline file:bg-cloud file:px-3 file:py-2 file:text-sm file:font-medium file:text-ink hover:file:border-signal-teal"
+            />
+            <button
+              type="submit"
+              className="rounded-md border border-hairline px-4 py-2 text-sm font-medium text-ink hover:border-signal-teal hover:text-signal-teal"
+            >
+              Upload
+            </button>
+          </form>
+
+          {files.length === 0 ? (
+            <p className="mt-5 text-sm text-muted">No files uploaded yet.</p>
+          ) : (
+            <ul className="mt-5 divide-y divide-hairline">
+              {files.map((file) => (
+                <li
+                  key={file.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                >
+                  <span className="font-mono text-xs text-ink">
+                    {file.fileUrl.split("/").pop()}
+                  </span>
+                  <span className="flex items-center gap-3">
+                    {file.signedUrl ? (
+                      <a
+                        href={file.signedUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-medium text-signal-teal hover:underline"
+                      >
+                        Download
+                      </a>
+                    ) : null}
+                    <form action={deleteShipmentFileAction}>
+                      <input
+                        type="hidden"
+                        name="shipmentId"
+                        value={shipment.id}
+                      />
+                      <input type="hidden" name="fileId" value={file.id} />
+                      <button
+                        type="submit"
+                        className="text-sm font-medium text-danger hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </form>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="mt-8 rounded-xl border border-hairline bg-white p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+            Share
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Create a read-only link so a partner or agent can download the
+            document set without signing in.
+          </p>
+
+          <form
+            action={createShareLinkAction}
+            className="mt-5 flex flex-wrap items-end gap-3"
+          >
+            <input type="hidden" name="shipmentId" value={shipment.id} />
+            <label className="text-sm font-medium text-ink">
+              Expires in days
+              <input
+                type="number"
+                name="days"
+                min={1}
+                max={365}
+                defaultValue={7}
+                className="mt-1 block w-32 rounded-md border border-hairline bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal-teal focus:ring-1 focus:ring-signal-teal"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-md border border-hairline px-4 py-2 text-sm font-medium text-ink hover:border-signal-teal hover:text-signal-teal"
+            >
+              Create link
+            </button>
+          </form>
+
+          {shareLinks.length === 0 ? (
+            <p className="mt-5 text-sm text-muted">No share links yet.</p>
+          ) : (
+            <ul className="mt-5 divide-y divide-hairline">
+              {shareLinks.map((link) => (
+                <li
+                  key={link.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                >
+                  <span className="min-w-0">
+                    <a
+                      href={`${appUrl}/share/${link.token}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block truncate font-mono text-xs text-signal-teal hover:underline"
+                    >
+                      {appUrl}/share/{link.token}
+                    </a>
+                    <span className="text-xs text-muted">
+                      Expires{" "}
+                      {new Date(link.expiresAt).toISOString().slice(0, 10)}
+                    </span>
+                  </span>
+                  <form action={revokeShareLinkAction}>
+                    <input type="hidden" name="shipmentId" value={shipment.id} />
+                    <input type="hidden" name="linkId" value={link.id} />
+                    <button
+                      type="submit"
+                      className="text-sm font-medium text-danger hover:underline"
+                    >
+                      Revoke
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="mt-8 rounded-xl border border-hairline bg-white p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+            Access
+          </h2>
+          <p className="mt-2 text-sm text-muted">
+            Grant another organization read access to this shipment.
+          </p>
+
+          <form
+            action={grantShipmentAccessAction}
+            className="mt-5 flex flex-wrap items-end gap-3"
+          >
+            <input type="hidden" name="shipmentId" value={shipment.id} />
+            <label className="text-sm font-medium text-ink">
+              Organization ID
+              <input
+                type="text"
+                name="orgId"
+                required
+                placeholder="00000000-0000-0000-0000-000000000000"
+                className="mt-1 block w-80 rounded-md border border-hairline bg-white px-3 py-2 font-mono text-sm text-ink outline-none focus:border-signal-teal focus:ring-1 focus:ring-signal-teal"
+              />
+            </label>
+            <button
+              type="submit"
+              className="rounded-md border border-hairline px-4 py-2 text-sm font-medium text-ink hover:border-signal-teal hover:text-signal-teal"
+            >
+              Grant access
+            </button>
+          </form>
+
+          {accessGrants.length === 0 ? (
+            <p className="mt-5 text-sm text-muted">No organizations granted access.</p>
+          ) : (
+            <ul className="mt-5 divide-y divide-hairline">
+              {accessGrants.map((grant) => (
+                <li
+                  key={grant.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                >
+                  <span className="font-mono text-xs text-ink">
+                    {grant.orgId}
+                    <span className="ml-3 font-sans text-xs text-muted">
+                      granted{" "}
+                      {new Date(grant.createdAt).toISOString().slice(0, 10)}
+                    </span>
+                  </span>
+                  <form action={revokeShipmentAccessAction}>
+                    <input type="hidden" name="shipmentId" value={shipment.id} />
+                    <input type="hidden" name="accessId" value={grant.id} />
+                    <button
+                      type="submit"
+                      className="text-sm font-medium text-danger hover:underline"
+                    >
+                      Revoke
+                    </button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </main>
     </div>

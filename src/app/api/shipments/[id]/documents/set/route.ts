@@ -1,8 +1,13 @@
-import { DOCUMENT_GENERATORS } from "@/lib/documents/registry";
 import { recordAuditEvent } from "@/lib/audit";
 import { getCurrentUser } from "@/lib/auth";
 import { getEntitlement, getOrgPlan, incrementUsage } from "@/lib/billing";
+import { DOCUMENT_GENERATORS } from "@/lib/documents/registry";
+import {
+  generateDocumentSet,
+  resolveDocumentSet,
+} from "@/lib/documents/set";
 import { allowRequest } from "@/lib/rate-limit";
+import { getShipmentRequirements } from "@/lib/requirements";
 import {
   getShipmentWithItems,
   recordDocumentGenerated,
@@ -15,7 +20,7 @@ export const runtime = "nodejs";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string; type: string }> },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const secFetchSite = request.headers.get("sec-fetch-site");
   if (
@@ -26,7 +31,7 @@ export async function GET(
     return new Response("Forbidden.", { status: 403 });
   }
 
-  const { id, type } = await params;
+  const { id } = await params;
 
   const user = await getCurrentUser();
   if (!user) {
@@ -43,11 +48,6 @@ export async function GET(
     return new Response("Shipment not found.", { status: 404 });
   }
 
-  const generator = DOCUMENT_GENERATORS[type];
-  if (!generator) {
-    return new Response("Unsupported document type.", { status: 400 });
-  }
-
   const plan = await getEffectivePlan(
     shipment.org_id,
     await getOrgPlan(shipment.org_id),
@@ -60,24 +60,37 @@ export async function GET(
     );
   }
 
+  const requirements = await getShipmentRequirements(shipment);
+  const includeCertificateOfOrigin = requirements.some(
+    (document) =>
+      document.docType === "certificate_of_origin" && document.required,
+  );
+  const slugs = resolveDocumentSet(includeCertificateOfOrigin);
+
   const branding = await getOrgBranding(shipment.org_id);
   const payload = { ...toDocumentPayload(shipment), branding };
-  const bytes = await generator.generate(payload);
+  const bytes = await generateDocumentSet(slugs, payload);
 
-  await recordDocumentGenerated(id, generator.docType, {
-    type,
-    generatedAt: new Date().toISOString(),
-  });
-
-  await incrementUsage(shipment.org_id, "document");
+  for (const slug of slugs) {
+    const definition = DOCUMENT_GENERATORS[slug];
+    if (!definition) {
+      continue;
+    }
+    await recordDocumentGenerated(id, definition.docType, {
+      type: slug,
+      generatedAt: new Date().toISOString(),
+      set: true,
+    });
+    await incrementUsage(shipment.org_id, "document");
+  }
 
   await recordAuditEvent({
     orgId: shipment.org_id,
     userId: user.id,
-    action: "document.download",
+    action: "document.download_set",
     entityType: "shipment",
     entityId: id,
-    metadata: { type },
+    metadata: { slugs },
   });
 
   const reference = (shipment.reference ?? shipment.id.slice(0, 8))
@@ -87,7 +100,7 @@ export async function GET(
   return new Response(new Uint8Array(bytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${reference}-${type}.pdf"`,
+      "Content-Disposition": `attachment; filename="${reference}-documents.pdf"`,
       "Cache-Control": "no-store",
     },
   });

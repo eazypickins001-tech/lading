@@ -13,7 +13,7 @@ const BLANK = "____________________________________________";
 export async function generateCertificateOfOrigin(
   payload: ShipmentDocumentPayload,
 ): Promise<Uint8Array> {
-  const layout = await PdfLayout.create("Certificate of Origin");
+  const layout = await PdfLayout.create("Certificate of Origin", payload.branding);
 
   layout.titleBlock([
     { label: "Reference", value: payload.reference ?? "-" },

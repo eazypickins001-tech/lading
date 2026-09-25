@@ -13,7 +13,7 @@ const BLANK = "____________________________________________";
 export async function generatePackingDeclaration(
   payload: ShipmentDocumentPayload,
 ): Promise<Uint8Array> {
-  const layout = await PdfLayout.create("Packing Declaration");
+  const layout = await PdfLayout.create("Packing Declaration", payload.branding);
 
   layout.titleBlock([
     { label: "Reference", value: payload.reference ?? "-" },

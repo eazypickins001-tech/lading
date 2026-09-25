@@ -165,8 +165,9 @@ export async function getRequiredDocuments(
 
 export async function getShipmentRequirements(
   shipment: ShipmentWithItems,
+  client?: SupabaseClient,
 ): Promise<RequiredDocument[]> {
-  const rules = await fetchRules(shipment.channel);
+  const rules = await fetchRules(shipment.channel, client);
   const items = shipment.items.length > 0 ? shipment.items : [{ hs_code: null }];
   const evaluated: EvaluatedDocument[] = [];
   for (const item of items) {

@@ -13,7 +13,7 @@ const BLANK = "____________________________________________";
 export async function generateVgmDeclaration(
   payload: ShipmentDocumentPayload,
 ): Promise<Uint8Array> {
-  const layout = await PdfLayout.create("VGM Declaration");
+  const layout = await PdfLayout.create("VGM Declaration", payload.branding);
 
   layout.titleBlock([
     { label: "Reference", value: payload.reference ?? "-" },

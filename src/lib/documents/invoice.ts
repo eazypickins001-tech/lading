@@ -48,7 +48,7 @@ export async function generateInvoiceDocument(
   payload: ShipmentDocumentPayload,
   options: { title: string; proforma: boolean },
 ): Promise<Uint8Array> {
-  const layout = await PdfLayout.create(options.title);
+  const layout = await PdfLayout.create(options.title, payload.branding);
 
   layout.titleBlock([
     { label: "Reference", value: payload.reference ?? "-" },

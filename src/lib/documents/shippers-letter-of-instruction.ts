@@ -14,7 +14,10 @@ const BLANK = "____________________________________________";
 export async function generateShippersLetterOfInstruction(
   payload: ShipmentDocumentPayload,
 ): Promise<Uint8Array> {
-  const layout = await PdfLayout.create("Shipper's Letter of Instruction");
+  const layout = await PdfLayout.create(
+    "Shipper's Letter of Instruction",
+    payload.branding,
+  );
 
   layout.titleBlock([
     { label: "Reference", value: payload.reference ?? "-" },

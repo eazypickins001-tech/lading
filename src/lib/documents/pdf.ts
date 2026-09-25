@@ -1,12 +1,13 @@
 import {
   PDFDocument,
   type PDFFont,
+  type PDFImage,
   type PDFPage,
   StandardFonts,
   rgb,
   type RGB,
 } from "pdf-lib";
-import type { DocumentLineItem } from "./types";
+import type { DocumentBranding, DocumentLineItem } from "./types";
 
 export const BRAND = {
   deepHarbor: rgb(11 / 255, 31 / 255, 51 / 255),
@@ -75,6 +76,66 @@ function sanitize(value: string): string {
     .replace(/[^\x00-\xFF]/g, "?");
 }
 
+type BrandingImages = {
+  logo: PDFImage | null;
+  signature: PDFImage | null;
+  seal: PDFImage | null;
+};
+
+const NO_BRANDING: BrandingImages = {
+  logo: null,
+  signature: null,
+  seal: null,
+};
+
+async function embedBrandingImage(
+  doc: PDFDocument,
+  url: string | null,
+): Promise<PDFImage | null> {
+  if (!url) {
+    return null;
+  }
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length < 4) {
+      return null;
+    }
+    const isPng =
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47;
+    const isJpg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    if (isPng) {
+      return await doc.embedPng(bytes);
+    }
+    if (isJpg) {
+      return await doc.embedJpg(bytes);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function embedBranding(
+  doc: PDFDocument,
+  branding: DocumentBranding | undefined,
+): Promise<BrandingImages> {
+  if (!branding) {
+    return NO_BRANDING;
+  }
+  return {
+    logo: await embedBrandingImage(doc, branding.logoUrl),
+    signature: await embedBrandingImage(doc, branding.signatureUrl),
+    seal: await embedBrandingImage(doc, branding.sealUrl),
+  };
+}
+
 export function wrapText(
   text: string,
   font: PDFFont,
@@ -109,6 +170,7 @@ export class PdfLayout {
   private readonly bold: PDFFont;
   private readonly title: string;
   private readonly generatedAt: Date;
+  private readonly branding: BrandingImages;
   private readonly contentWidth = PAGE_WIDTH - MARGIN * 2;
   private page: PDFPage;
   private cursorY: number;
@@ -119,22 +181,28 @@ export class PdfLayout {
     bold: PDFFont,
     title: string,
     generatedAt: Date,
+    branding: BrandingImages,
   ) {
     this.doc = doc;
     this.regular = regular;
     this.bold = bold;
     this.title = title;
     this.generatedAt = generatedAt;
+    this.branding = branding;
     this.page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     this.drawHeader();
     this.cursorY = PAGE_HEIGHT - 132;
   }
 
-  static async create(title: string): Promise<PdfLayout> {
+  static async create(
+    title: string,
+    branding?: DocumentBranding,
+  ): Promise<PdfLayout> {
     const doc = await PDFDocument.create();
     const regular = await doc.embedFont(StandardFonts.Helvetica);
     const bold = await doc.embedFont(StandardFonts.HelveticaBold);
-    return new PdfLayout(doc, regular, bold, title, new Date());
+    const images = await embedBranding(doc, branding);
+    return new PdfLayout(doc, regular, bold, title, new Date(), images);
   }
 
   private drawHeader(): void {
@@ -176,6 +244,57 @@ export class PdfLayout {
       font: this.bold,
       color: BRAND.white,
     });
+    if (this.branding.logo) {
+      this.drawFittedImage(this.branding.logo, PAGE_WIDTH - MARGIN - 120, top - 76, 120, 22, true);
+    }
+  }
+
+  private drawFittedImage(
+    image: PDFImage,
+    x: number,
+    top: number,
+    maxWidth: number,
+    maxHeight: number,
+    alignRight = false,
+  ): void {
+    const scale = Math.min(
+      maxWidth / image.width,
+      maxHeight / image.height,
+      1,
+    );
+    const width = image.width * scale;
+    const height = image.height * scale;
+    const drawX = alignRight ? x + maxWidth - width : x;
+    this.page.drawImage(image, {
+      x: drawX,
+      y: top - height,
+      width,
+      height,
+    });
+  }
+
+  private drawBrandingSignature(): void {
+    const { signature, seal } = this.branding;
+    if (!signature && !seal) {
+      return;
+    }
+    const blockHeight = 100;
+    this.ensureSpace(blockHeight);
+    const top = this.cursorY;
+    this.page.drawText("Authorised signature", {
+      x: MARGIN,
+      y: top,
+      size: 9,
+      font: this.bold,
+      color: BRAND.muted,
+    });
+    if (signature) {
+      this.drawFittedImage(signature, MARGIN, top - 14, 170, 52);
+    }
+    if (seal) {
+      this.drawFittedImage(seal, MARGIN + 200, top - 14, 90, 72);
+    }
+    this.cursorY = top - blockHeight;
   }
 
   private drawContinuationHeader(): void {
@@ -492,6 +611,7 @@ export class PdfLayout {
   }
 
   async save(): Promise<Uint8Array> {
+    this.drawBrandingSignature();
     const pages = this.doc.getPages();
     const generated = `Generated ${this.generatedAt
       .toISOString()

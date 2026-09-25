@@ -11,9 +11,25 @@ import type { TradeChannel, TransportMode } from "@/lib/documents/types";
 import { suggestHsCodes, type HsSuggestion } from "@/lib/hs-suggest";
 import { upsertParty } from "@/lib/parties";
 import { allowRequest } from "@/lib/rate-limit";
-import { createShipment, getShipmentWithItems, type CreateShipmentItemInput } from "@/lib/shipments";
+import { generateDocumentSet } from "@/lib/documents/set";
+import { createShipment, getShipmentWithItems, toDocumentPayload, type CreateShipmentItemInput } from "@/lib/shipments";
+import {
+  createShareLink,
+  revokeShareLink,
+} from "@/lib/share-links";
+import {
+  grantShipmentAccess,
+  revokeShipmentAccess,
+} from "@/lib/shipment-access";
+import {
+  deleteShipmentFile,
+  getOrgBranding,
+  uploadShipmentFile,
+} from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
 import { getEffectivePlan } from "@/lib/subscriptions";
+
+const ACCESS_MANAGER_ROLES = ["owner", "admin", "trader"];
 
 const CHANNELS: TradeChannel[] = ["import", "export"];
 const MODES: TransportMode[] = [
@@ -446,6 +462,221 @@ export async function runChecksAction(formData: FormData): Promise<void> {
 
   revalidatePath(`/dashboard/shipments/${shipmentId}`);
   revalidatePath("/dashboard");
+}
+
+export async function uploadShipmentFileAction(
+  formData: FormData,
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return;
+  }
+  const organization = await getActiveOrg();
+  if (!organization) {
+    return;
+  }
+
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  const file = formData.get("file");
+  if (!shipmentId || !(file instanceof File) || file.size === 0) {
+    return;
+  }
+
+  try {
+    await uploadShipmentFile(organization.id, shipmentId, file);
+    await recordAuditEvent({
+      orgId: organization.id,
+      userId: user.id,
+      action: "document.upload",
+      entityType: "shipment",
+      entityId: shipmentId,
+      metadata: { fileName: file.name },
+    });
+  } catch {
+    return;
+  }
+
+  revalidatePath(`/dashboard/shipments/${shipmentId}`);
+}
+
+export async function deleteShipmentFileAction(
+  formData: FormData,
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return;
+  }
+
+  const fileId = String(formData.get("fileId") ?? "").trim();
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  if (!fileId) {
+    return;
+  }
+
+  await deleteShipmentFile(fileId);
+
+  if (shipmentId) {
+    revalidatePath(`/dashboard/shipments/${shipmentId}`);
+  }
+}
+
+export async function mergeShipmentDocumentsAction(
+  shipmentId: string,
+  slugs: string[],
+): Promise<Uint8Array> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("Unauthorized.");
+  }
+
+  const shipment = await getShipmentWithItems(shipmentId);
+  if (!shipment) {
+    throw new Error("Shipment not found.");
+  }
+
+  const branding = await getOrgBranding(shipment.org_id);
+  const payload = { ...toDocumentPayload(shipment), branding };
+  return generateDocumentSet(slugs, payload);
+}
+
+export async function createShareLinkAction(formData: FormData): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return;
+  }
+  const organization = await getActiveOrg();
+  if (!organization) {
+    return;
+  }
+
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  if (!shipmentId) {
+    return;
+  }
+
+  const shipment = await getShipmentWithItems(shipmentId);
+  if (!shipment || shipment.org_id !== organization.id) {
+    return;
+  }
+
+  const parsedDays = Number(formData.get("days") ?? "7");
+  const days = Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 7;
+
+  try {
+    const link = await createShareLink(
+      shipmentId,
+      organization.id,
+      user.id,
+      days,
+    );
+    await recordAuditEvent({
+      orgId: organization.id,
+      userId: user.id,
+      action: "share.create",
+      entityType: "shipment",
+      entityId: shipmentId,
+      metadata: { linkId: link.id, days },
+    });
+  } catch {
+    return;
+  }
+
+  revalidatePath(`/dashboard/shipments/${shipmentId}`);
+}
+
+export async function revokeShareLinkAction(formData: FormData): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return;
+  }
+
+  const linkId = String(formData.get("linkId") ?? "").trim();
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  if (!linkId) {
+    return;
+  }
+
+  await revokeShareLink(linkId);
+
+  if (shipmentId) {
+    revalidatePath(`/dashboard/shipments/${shipmentId}`);
+  }
+}
+
+export async function grantShipmentAccessAction(
+  formData: FormData,
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return;
+  }
+  const organization = await getActiveOrg();
+  if (!organization) {
+    return;
+  }
+
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  const orgId = String(formData.get("orgId") ?? "").trim();
+  if (!shipmentId || !orgId) {
+    return;
+  }
+
+  const shipment = await getShipmentWithItems(shipmentId);
+  if (!shipment || shipment.org_id !== organization.id) {
+    return;
+  }
+  if (!ACCESS_MANAGER_ROLES.includes(organization.role)) {
+    return;
+  }
+
+  try {
+    await grantShipmentAccess(shipmentId, orgId, user.id);
+    await recordAuditEvent({
+      orgId: organization.id,
+      userId: user.id,
+      action: "access.grant",
+      entityType: "shipment",
+      entityId: shipmentId,
+      metadata: { orgId },
+    });
+  } catch {
+    return;
+  }
+
+  revalidatePath(`/dashboard/shipments/${shipmentId}`);
+}
+
+export async function revokeShipmentAccessAction(
+  formData: FormData,
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return;
+  }
+  const organization = await getActiveOrg();
+  if (!organization) {
+    return;
+  }
+
+  const accessId = String(formData.get("accessId") ?? "").trim();
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  if (!accessId) {
+    return;
+  }
+
+  const shipment = shipmentId ? await getShipmentWithItems(shipmentId) : null;
+  if (shipment && shipment.org_id !== organization.id) {
+    return;
+  }
+  if (!ACCESS_MANAGER_ROLES.includes(organization.role)) {
+    return;
+  }
+
+  await revokeShipmentAccess(accessId);
+
+  if (shipmentId) {
+    revalidatePath(`/dashboard/shipments/${shipmentId}`);
+  }
 }
 
 export async function resolveFindingAction(formData: FormData): Promise<void> {

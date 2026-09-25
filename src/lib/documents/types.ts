@@ -46,6 +46,12 @@ export type DocumentParty = {
   taxId: string | null;
 };
 
+export type DocumentBranding = {
+  logoUrl: string | null;
+  signatureUrl: string | null;
+  sealUrl: string | null;
+};
+
 export type DocumentLineItem = {
   description: string;
   hsCode: string | null;
@@ -73,4 +79,5 @@ export type ShipmentDocumentPayload = {
   consignee: DocumentParty | null;
   notify: DocumentParty | null;
   items: DocumentLineItem[];
+  branding?: DocumentBranding;
 };

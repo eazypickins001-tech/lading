@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getActiveOrg, getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type {
@@ -237,8 +238,9 @@ export async function listShipments(): Promise<ShipmentListItem[]> {
 
 export async function getShipmentWithItems(
   id: string,
+  client?: SupabaseClient,
 ): Promise<ShipmentWithItems | null> {
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const { data, error } = await supabase
     .from("shipments")
     .select(
