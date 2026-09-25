@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { Disclaimer } from "@/components/disclaimer";
 import { MarketingFooter } from "@/components/marketing-footer";
 import { MarketingHeader } from "@/components/marketing-header";
-import { BLOG_POSTS, PLATFORM_LABELS, PLATFORM_ORDER, getBlogPost } from "@/lib/blog";
+import { PLATFORM_LABELS, PLATFORM_ORDER } from "@/lib/blog";
+import { getPublishedPost } from "@/lib/blog-store";
 
 function youtubeId(url: string): string | null {
   const match = url.match(
@@ -25,17 +26,13 @@ function formatDate(value: string): string {
   });
 }
 
-export function generateStaticParams() {
-  return BLOG_POSTS.map((post) => ({ slug: post.slug }));
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const post = await getPublishedPost(slug);
   if (!post) {
     return { title: "Post not found" };
   }
@@ -52,7 +49,7 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const post = await getPublishedPost(slug);
   if (!post) {
     notFound();
   }

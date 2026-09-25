@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MarketingFooter } from "@/components/marketing-footer";
 import { MarketingHeader } from "@/components/marketing-header";
-import { BLOG_POSTS, PLATFORM_LABELS, PLATFORM_ORDER } from "@/lib/blog";
+import { PLATFORM_LABELS, PLATFORM_ORDER } from "@/lib/blog";
+import { listPublishedPosts } from "@/lib/blog-store";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -18,10 +19,8 @@ function formatDate(value: string): string {
   });
 }
 
-export default function BlogIndexPage() {
-  const posts = [...BLOG_POSTS].sort((a, b) =>
-    a.publishedAt < b.publishedAt ? 1 : -1,
-  );
+export default async function BlogIndexPage() {
+  const posts = await listPublishedPosts();
 
   return (
     <div className="flex flex-1 flex-col">

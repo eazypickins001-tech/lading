@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
-import { BLOG_POSTS } from "@/lib/blog";
+import { listPublishedPosts } from "@/lib/blog-store";
 import { RESOURCES } from "@/lib/resources";
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://lading.app";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}/`,
@@ -51,9 +51,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  const blogRoutes: MetadataRoute.Sitemap = BLOG_POSTS.map((post) => ({
+  const posts = await listPublishedPosts();
+
+  const blogRoutes: MetadataRoute.Sitemap = posts.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
-    lastModified: new Date(post.publishedAt),
+    lastModified: post.publishedAt ? new Date(post.publishedAt) : new Date(),
     changeFrequency: "monthly",
     priority: 0.6,
   }));

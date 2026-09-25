@@ -8,6 +8,7 @@ const links: { href: string; label: string }[] = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/organizations", label: "Organizations" },
   { href: "/admin/subscriptions", label: "Subscriptions" },
+  { href: "/admin/blog", label: "Blog" },
   { href: "/dashboard/data", label: "Data sources" },
 ];
 
