@@ -6,6 +6,7 @@ import {
   generateDocumentSet,
   resolveDocumentSet,
 } from "@/lib/documents/set";
+import { createNotification } from "@/lib/notifications";
 import { allowRequest } from "@/lib/rate-limit";
 import { getShipmentRequirements } from "@/lib/requirements";
 import {
@@ -91,6 +92,14 @@ export async function GET(
     entityType: "shipment",
     entityId: id,
     metadata: { slugs },
+  });
+
+  await createNotification({
+    orgId: shipment.org_id,
+    userId: user.id,
+    title: "Document set generated",
+    body: `${slugs.length} documents were generated for ${shipment.reference ?? id.slice(0, 8)}.`,
+    link: `/dashboard/shipments/${id}`,
   });
 
   const reference = (shipment.reference ?? shipment.id.slice(0, 8))

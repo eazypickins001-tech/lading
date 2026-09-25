@@ -12,6 +12,7 @@ export type NavKey =
   | "screening"
   | "landedCost"
   | "tradeTerms"
+  | "reports"
   | "profile"
   | "settings"
   | "audit"
@@ -26,6 +27,7 @@ const links: { key: NavKey; href: string; label: string }[] = [
   { key: "screening", href: "/dashboard/screening", label: "Screening" },
   { key: "landedCost", href: "/dashboard/landed-cost", label: "Landed cost" },
   { key: "tradeTerms", href: "/dashboard/trade-terms", label: "Trade terms" },
+  { key: "reports", href: "/dashboard/reports", label: "Reports" },
   { key: "profile", href: "/dashboard/profile", label: "Profile" },
   { key: "settings", href: "/dashboard/settings", label: "Settings" },
   { key: "audit", href: "/dashboard/audit", label: "Audit" },

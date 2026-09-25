@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChannelBadge, StatusBadge } from "@/components/shipment-badges";
+import { ChannelBadge } from "@/components/shipment-badges";
 import { ConsistencyFindings } from "@/components/consistency-findings";
 import { DashboardHeader } from "@/components/dashboard-header";
 import { RequiredDocumentsList } from "@/components/required-documents";
@@ -22,6 +22,7 @@ import {
   uploadShipmentFileAction,
 } from "../actions";
 import { ScreeningCard } from "./screening-card";
+import { StatusControl } from "./status-control";
 
 const documents = [
   { type: "commercial-invoice", label: "Commercial Invoice" },
@@ -110,7 +111,7 @@ export default async function ShipmentDetailPage({
               <h1 className="font-mono text-2xl font-semibold tracking-tight text-deep-harbor">
                 {shipment.reference ?? shipment.id.slice(0, 8)}
               </h1>
-              <StatusBadge status={shipment.status} />
+              <StatusControl shipmentId={shipment.id} status={shipment.status} />
               <ChannelBadge channel={shipment.channel} />
             </div>
             <p className="mt-2 text-muted">{shipment.organization.name}</p>

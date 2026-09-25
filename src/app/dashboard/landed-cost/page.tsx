@@ -9,6 +9,10 @@ import {
   getTariffForHsCode,
   type LandedCostBreakdown,
 } from "@/lib/landed-cost";
+import { CbmCalculator } from "./cbm-calculator";
+import { CurrencyRateField } from "./currency-rate-field";
+
+const SUPPORTED_CURRENCIES = ["NGN", "USD", "EUR", "GBP", "CNY"] as const;
 
 const inputClass =
   "mt-1 w-full rounded-md border border-hairline bg-white px-3 py-2 text-sm text-ink outline-none focus:border-signal-teal focus:ring-1 focus:ring-signal-teal";
@@ -59,16 +63,27 @@ export default async function LandedCostPage({
   const hasQuery = Object.keys(params).length > 0;
 
   const fxRates = await getLatestFxRates();
-  const usdRate = fxRates.find((rate) => rate.currency === "USD") ?? null;
 
   const hsCode = single(params.hsCode) ?? "";
   const fob = toNumber(single(params.fob));
   const freight = toNumber(single(params.freight));
   const insurance = toNumber(single(params.insurance));
-  const currency = (single(params.currency) ?? "NGN").toUpperCase();
+  const requestedCurrency = (single(params.currency) ?? "NGN").toUpperCase();
+  const currency = (
+    SUPPORTED_CURRENCIES as readonly string[]
+  ).includes(requestedCurrency)
+    ? requestedCurrency
+    : "NGN";
+  const currencyRate =
+    fxRates.find((rate) => rate.currency === currency) ?? null;
+  const defaultRateForCurrency =
+    currency === "NGN"
+      ? "1"
+      : currencyRate
+        ? String(currencyRate.rateNgn)
+        : "1";
   const suppliedExchangeRate = single(params.exchangeRate);
-  const exchangeRateDefault =
-    suppliedExchangeRate ?? (usdRate ? String(usdRate.rateNgn) : "1");
+  const exchangeRateDefault = suppliedExchangeRate ?? defaultRateForCurrency;
   const exchangeRate = toNumber(exchangeRateDefault, 1);
 
   let breakdown: LandedCostBreakdown | null = null;
@@ -193,43 +208,11 @@ export default async function LandedCostPage({
                 className={`${inputClass} font-mono`}
               />
             </div>
-            <div>
-              <label htmlFor="currency" className={labelClass}>
-                Currency
-              </label>
-              <input
-                id="currency"
-                name="currency"
-                type="text"
-                defaultValue={currency}
-                placeholder="NGN"
-                className={`${inputClass} font-mono uppercase`}
-              />
-            </div>
-            <div>
-              <label htmlFor="exchangeRate" className={labelClass}>
-                Exchange rate to NGN
-              </label>
-              <input
-                id="exchangeRate"
-                name="exchangeRate"
-                type="number"
-                min="0"
-                step="any"
-                defaultValue={exchangeRateDefault}
-                placeholder="1"
-                className={`${inputClass} font-mono`}
-              />
-              {!suppliedExchangeRate && usdRate ? (
-                <p className="mt-1 font-mono text-xs text-muted">
-                  Latest NCS rate: USD 1 = NGN{" "}
-                  {usdRate.rateNgn.toLocaleString("en-NG", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
-              ) : null}
-            </div>
+            <CurrencyRateField
+              rates={fxRates}
+              defaultCurrency={currency}
+              defaultExchangeRate={exchangeRateDefault}
+            />
           </div>
 
           <button
@@ -346,6 +329,8 @@ export default async function LandedCostPage({
             </p>
           </section>
         )}
+
+        <CbmCalculator />
       </main>
     </div>
   );

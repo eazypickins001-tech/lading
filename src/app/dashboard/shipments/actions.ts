@@ -7,13 +7,19 @@ import { getActiveOrg, getCurrentUser } from "@/lib/auth";
 import { getEntitlement, incrementUsage } from "@/lib/billing";
 import { runConsistencyChecks } from "@/lib/consistency";
 import { replaceFindings, setFindingResolved } from "@/lib/consistency-store";
-import type { TradeChannel, TransportMode } from "@/lib/documents/types";
+import type {
+  ShipmentStatus,
+  TradeChannel,
+  TransportMode,
+} from "@/lib/documents/types";
 import { suggestHsCodes, type HsSuggestion } from "@/lib/hs-suggest";
+import { createNotification } from "@/lib/notifications";
 import { upsertParty } from "@/lib/parties";
 import { allowRequest } from "@/lib/rate-limit";
 import { screenShipmentParties, type ScreeningResult } from "@/lib/screening";
 import { generateDocumentSet } from "@/lib/documents/set";
 import { createShipment, getShipmentWithItems, toDocumentPayload, type CreateShipmentItemInput } from "@/lib/shipments";
+import { canTransition, SHIPMENT_STATUSES, statusLabel } from "@/lib/shipment-status";
 import {
   createShareLink,
   revokeShareLink,
@@ -292,7 +298,93 @@ export async function createShipmentAction(
     metadata: { channel, reference },
   });
 
+  await createNotification({
+    orgId: organization.id,
+    userId: user.id,
+    title: "Shipment created",
+    body: `${reference ?? shipmentId.slice(0, 8)} was created. Add the required documents next.`,
+    link: `/dashboard/shipments/${shipmentId}`,
+  });
+
   redirect(`/dashboard/shipments/${shipmentId}`);
+}
+
+export async function updateShipmentStatusAction(
+  formData: FormData,
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    return;
+  }
+  const organization = await getActiveOrg();
+  if (!organization) {
+    return;
+  }
+
+  const shipmentId = String(formData.get("shipmentId") ?? "").trim();
+  const nextStatus = String(formData.get("status") ?? "").trim();
+  if (
+    !shipmentId ||
+    !SHIPMENT_STATUSES.includes(nextStatus as ShipmentStatus)
+  ) {
+    return;
+  }
+
+  const supabase = await createClient();
+  const { data: current } = await supabase
+    .from("shipments")
+    .select("id, status, reference")
+    .eq("id", shipmentId)
+    .eq("org_id", organization.id)
+    .maybeSingle();
+
+  const row = current as
+    | { id: string; status: ShipmentStatus; reference: string | null }
+    | null;
+
+  if (!row) {
+    return;
+  }
+
+  const to = nextStatus as ShipmentStatus;
+  if (!canTransition(row.status, to)) {
+    return;
+  }
+
+  const { data: updated, error } = await supabase
+    .from("shipments")
+    .update({ status: to })
+    .eq("id", shipmentId)
+    .eq("org_id", organization.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !updated) {
+    return;
+  }
+
+  const label = row.reference ?? shipmentId.slice(0, 8);
+
+  await recordAuditEvent({
+    orgId: organization.id,
+    userId: user.id,
+    action: "shipment.status",
+    entityType: "shipment",
+    entityId: shipmentId,
+    metadata: { from: row.status, to },
+  });
+
+  await createNotification({
+    orgId: organization.id,
+    userId: user.id,
+    title: "Shipment status updated",
+    body: `${label} moved from ${statusLabel(row.status)} to ${statusLabel(to)}.`,
+    link: `/dashboard/shipments/${shipmentId}`,
+  });
+
+  revalidatePath(`/dashboard/shipments/${shipmentId}`);
+  revalidatePath("/dashboard/shipments");
+  revalidatePath("/dashboard/reports");
 }
 
 export async function updateShipmentAction(

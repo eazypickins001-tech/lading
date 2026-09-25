@@ -2,6 +2,7 @@ import { DOCUMENT_GENERATORS } from "@/lib/documents/registry";
 import { recordAuditEvent } from "@/lib/audit";
 import { getCurrentUser } from "@/lib/auth";
 import { getEntitlement, getOrgPlan, incrementUsage } from "@/lib/billing";
+import { createNotification } from "@/lib/notifications";
 import { allowRequest } from "@/lib/rate-limit";
 import {
   getShipmentWithItems,
@@ -78,6 +79,14 @@ export async function GET(
     entityType: "shipment",
     entityId: id,
     metadata: { type },
+  });
+
+  await createNotification({
+    orgId: shipment.org_id,
+    userId: user.id,
+    title: "Document generated",
+    body: `${type} was generated for ${shipment.reference ?? id.slice(0, 8)}.`,
+    link: `/dashboard/shipments/${id}`,
   });
 
   const reference = (shipment.reference ?? shipment.id.slice(0, 8))
