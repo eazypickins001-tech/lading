@@ -34,6 +34,7 @@ export type DocType =
   | "shippers_letter_of_instruction"
   | "vgm_declaration"
   | "packing_declaration"
+  | "fda_notification"
   | "other";
 
 export type DocumentParty = {

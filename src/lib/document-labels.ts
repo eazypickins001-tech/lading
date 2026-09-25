@@ -17,6 +17,7 @@ export const docTypeLabels: Record<DocType, string> = {
   shippers_letter_of_instruction: "Shipper's Letter of Instruction",
   vgm_declaration: "VGM Declaration",
   packing_declaration: "Packing Declaration",
+  fda_notification: "FDA Prior Notice",
   other: "Other Document",
 };
 

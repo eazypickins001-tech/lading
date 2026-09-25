@@ -15,6 +15,11 @@ const attributeOptions = [
     tip: "Select for plants or plant products, which can trigger phytosanitary certificates.",
   },
   {
+    name: "food_products",
+    label: "Food products",
+    tip: "Select for food and agricultural products, which can trigger FDA Prior Notice for US imports.",
+  },
+  {
     name: "food_drugs_cosmetics",
     label: "Food, drugs and cosmetics",
     tip: "Select for food, drugs, or cosmetics that may need NAFDAC or health permits.",
